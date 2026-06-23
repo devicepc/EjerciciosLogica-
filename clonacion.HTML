@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Respaldo Físico · Clonación e Imágenes de Disco</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&family=Bricolage+Grotesque:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ===== CONFIGURACIÓN ESTÉTICA GLOBAL ===== */
+  :root[data-theme="dark"] {
+    --bg: #0d0f14;
+    --bg2: #0a0c12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #252a3a;
+    --border: #2d3350;
+    --border-soft: rgba(45,51,80,0.5);
+    --accent: #00e5ff;
+    --accent-soft: rgba(0,229,255,0.12);
+    --accent2: #7c5cfc;
+    --green: #2ecc8a;
+    --amber: #f5a623;
+    --red: #f25656;
+    --text: #e8ecf4;
+    --text2: #8b93a8;
+    --text3: #555e78;
+    --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --header-gradient: linear-gradient(135deg, #0a0c12 0%, #131a2e 50%, #0a0c12 100%);
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fb;
+    --bg2: #ffffff;
+    --surface: #ffffff;
+    --surface2: #f0f3f9;
+    --surface3: #e4e9f2;
+    --border: #d4dae8;
+    --border-soft: rgba(180,190,210,0.5);
+    --accent: #0099bb;
+    --accent-soft: rgba(0,153,187,0.10);
+    --accent2: #6242e0;
+    --green: #1e9e6b;
+    --amber: #d18a0c;
+    --red: #d63838;
+    --text: #1a1f33;
+    --text2: #50587a;
+    --text3: #8893ad;
+    --shadow: 0 4px 20px rgba(50,70,110,0.10);
+    --header-gradient: linear-gradient(135deg, #1a1f33 0%, #2a3050 50%, #1a1f33 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+    min-height: 100vh; padding-bottom: 80px; transition: background 0.3s, color 0.3s;
+    font-size: 16px; line-height: 1.6;
+  }
+
+  header.brand { background: var(--header-gradient); border-bottom: 1px solid rgba(0,229,255,0.15); position: relative; }
+  .brand-strip { display: flex; justify-content: space-between; align-items: center; padding: 14px 40px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .brand-strip-left { display: flex; align-items: center; gap: 15px; font-size: 14px; color: rgba(255,255,255,0.65); }
+  .brand-link { color: var(--accent) !important; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; text-decoration: none; }
+  .theme-toggle { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); border-radius: 24px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .header-hero { padding: 40px 40px 36px; }
+  .header-chip { display: inline-flex; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px; }
+  header.brand h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  header.brand h1 .h-accent { color: var(--accent); }
+  header.brand p { font-size: 16px; color: rgba(255,255,255,0.65); max-width: 800px; }
+
+  .tabs { display: flex; gap: 6px; padding: 0 40px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .tab { padding: 16px 20px; font-size: 15px; font-weight: 600; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .panel { display: none; padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
+  .panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: #fff; margin-bottom: 12px; }
+  h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; color: var(--accent); margin: 18px 0 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  p { color: var(--text2); margin-bottom: 16px; font-size: 15px; }
+
+  /* ===== ANÁLISIS DE INTERFACES Y PROGRAMAS ===== */
+  .grid-tech { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px; }
+  .tech-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: border-color 0.2s; }
+  .tech-item:hover { border-color: var(--accent); }
+  .tech-item h4 { font-family: 'Space Mono', monospace; font-size: 14px; color: #fff; margin-bottom: 6px; }
+  .info-box { background: var(--surface2); border: 1px solid var(--border); padding: 14px 18px; border-radius: 8px; margin-top: 10px; font-size: 14px; min-height: 54px; color: var(--text); }
+
+  /* ===== SIMULADOR DE INTERFACES EMULADAS ===== */
+  .sim-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+  @media (max-width: 1100px) { .sim-layout { grid-template-columns: 1fr; } }
+  
+  .mock-interface-card { background: #000000; border: 2px solid #555e78; border-radius: 8px; font-family: 'Space Mono', monospace; padding: 16px; color: #fff; display: none; margin-top: 15px; box-shadow: inset 0 0 10px rgba(0,229,255,0.1); }
+  .mock-interface-card.active { display: block; }
+  .mock-title-bar { background: #0022aa; padding: 4px 10px; color: #fff; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; margin-bottom: 12px; border-radius: 4px; }
+  
+  .disk-row-low { border: 1px solid transparent; border-radius: 4px; transition: background 0.15s; }
+  .disk-row-low.selected-src { border: 1px dashed var(--accent) !important; background: rgba(0, 229, 255, 0.15) !important; }
+  .disk-row-low.selected-dst { border: 1px dashed var(--green) !important; background: rgba(46, 204, 138, 0.2) !important; }
+
+  .mock-modern-ui { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'DM Sans', sans-serif; display: none; margin-top: 15px; }
+  .mock-modern-ui.active { display: block; }
+
+  .disk-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); margin-bottom: 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+  .disk-row:hover { border-color: var(--accent); background: rgba(0,229,255,0.04); }
+  .disk-row.selected-src { border-color: var(--accent); background: rgba(0, 229, 255, 0.08); }
+  .disk-row.selected-dst { border-color: var(--green); background: rgba(46, 204, 138, 0.08); }
+
+  .bar-visual { height: 14px; background: #252a3a; border-radius: 3px; position: relative; overflow: hidden; margin-top: 5px; }
+  .bar-fill { height: 100%; background: var(--accent2); width: 0%; transition: width 0.6s ease; }
+  .bar-fill.used { background: var(--red); }
+  .bar-fill.unformatted { background: #555e78; }
+  .bar-fill.copied-data { background: var(--green); }
+
+  /* ===== CONTROLES Y LOGS ===== */
+  .sim-repo-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); }
+  .sim-controls { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+  .ctrl-title { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+  
+  .btn-add { background: var(--accent); color: #001218; border: none; border-radius: 8px; padding: 12px 0; font-size: 15px; font-weight: 700; cursor: pointer; transition: filter 0.2s; width: 100%; text-align: center; }
+  .btn-add:hover { filter: brightness(1.1); }
+  .btn-check { background: var(--green); color: #fff; border: none; border-radius: 8px; padding: 12px 0; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; }
+  .btn-reset { background: none; color: var(--text3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 0; font-size: 13px; cursor: pointer; width: 100%; }
+  
+  .validation-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; scroll-margin-top: 20px; }
+  .validation-box.visible { display: block; }
+  .feedback-box { padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; border: 1px solid transparent; }
+  .feedback-box.visible { display: block; }
+  .fb-good { background: rgba(46, 204, 138, 0.12); border-color: var(--green); color: var(--green); }
+  .fb-bad { background: rgba(245, 166, 35, 0.12); border-color: var(--amber); color: var(--amber); }
+
+  .log-terminal { background: #05070a; border: 1px solid #1c2030; font-family: 'Space Mono', monospace; font-size: 13px; padding: 12px; border-radius: 6px; color: #a4b1cd; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-top: 10px; margin-bottom: 14px; }
+  .log-alert { color: var(--amber); font-weight: bold; }
+  .log-success { color: var(--green); font-weight: bold; }
+
+  /* ===== ADVERTENCIA DINÁMICA LOW INTERFACE ===== */
+  #lowTargetWarning {
+    background: rgba(245, 166, 35, 0.2);
+    border: 1px solid var(--amber);
+    color: #fff;
+    padding: 6px 10px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    display: none;
+    font-weight: bold;
+    animation: blinker 1.5s linear infinite;
+  }
+  @keyframes blinker { 50% { opacity: 0.6; } }
+
+  /* ===== QUIZ ===== */
+  .quiz-shell { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); max-width: 800px; margin: 0 auto; }
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .progress-bar-wrap { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%); width: 0%; transition: width 0.3s; }
+  .quiz-q { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; gap: 10px; font-family: 'Bricolage Grotesque', sans-serif; }
+  .q-num { background: var(--accent-soft); color: var(--accent); font-family: 'Space Mono', monospace; font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: left; font-size: 15px; color: var(--text); cursor: pointer; transition: all 0.2s; }
+  .quiz-opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  .quiz-review-container { margin-top: 30px; text-align: left; border-top: 1px solid var(--border); padding-top: 20px; }
+  .review-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .review-q-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; font-family: 'Bricolage Grotesque', sans-serif; }
+  .review-opt-line { padding: 8px 12px; border-radius: 6px; font-size: 14px; margin-bottom: 4px; border: 1px solid transparent; color: var(--text2); }
+  .review-opt-line.user-selected-correct { background: rgba(46, 204, 138, 0.12); border-color: var(--green); color: var(--green); font-weight: 500; }
+  .review-opt-line.user-selected-incorrect { background: rgba(242, 86, 86, 0.12); border-color: var(--red); color: var(--red); font-weight: 500; }
+  .review-opt-line.correct-unselected { color: var(--text); font-weight: 500; text-decoration: underline; }
+  .review-reminder-box { margin-top: 10px; padding: 10px 14px; background: rgba(245, 166, 35, 0.08); border-left: 3px solid var(--amber); border-radius: 0 6px 6px 0; font-size: 13px; color: var(--text); line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="brand-strip">
+    <div class="brand-strip-left">
+      <a href="#" class="brand-link">LABORATORIO DE BACKUP FÍSICO</a>
+      <span class="sep">/</span>
+      <span>Políticas de Clonación e Imágenes de Almacenamiento</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> <span id="themeText">Modo Claro</span>
+    </button>
+  </div>
+  <div class="header-hero">
+    <div class="header-chip">Ecosistema Educativo de Respaldo Físico a Nivel de Bloques</div>
+    <h1>Clonación de Discos e <span class="h-accent">Imágenes Físicas</span></h1>
+    <p>Aprende a realizar migraciones exactas de almacenamiento, respaldos completos de sistemas operativos y la diferencia entre duplicación sector por sector versus compresión lógica por bloques de disco.</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('teo')">1. Arquitectura y Análisis de Software</button>
+  <button class="tab" onclick="switchTab('sim')">2. Simulador de Interfaces de Respaldo</button>
+  <button class="tab" onclick="switchTab('quiz')">3. Autoevaluación</button>
+</div>
+
+<div id="panel-teo" class="panel active">
+  <div class="card">
+    <h2>Estrategias a Nivel de Estructura Física y Particiones</h2>
+    <p>A diferencia del respaldo de archivos lógicos, las imágenes de disco y clonaciones capturan las tablas de partición, el sector de arranque MBR/GPT y los metadatos ocultos del sistema de archivos.</p>
+    
+    <div class="grid-tech">
+      <div class="tech-item" onclick="showTeoInfo('clon')">
+        <h4>Clonación Directa (Disco a Disco)</h4>
+        <p>Vuelca en tiempo real toda la información de un almacenamiento de origen hacia un hardware de destino conectado simultáneamente.</p>
+      </div>
+      <div class="tech-item" onclick="showTeoInfo('img')">
+        <h4>Creación de Archivo de Imagen (.VMDK/.IMG)</h4>
+        <p>Empaqueta un sector o disco completo en un único archivo comprimido almacenable en repositorios externos, nubes o servidores en red.</p>
+      </div>
+    </div>
+    <div id="teo-box" class="info-box">Haz clic sobre una de las técnicas superiores para analizar su caso de uso recomendado...</div>
+
+    <h3 style="margin-top:25px;">Tipos de Interfaces en la Industria: Usabilidad y Paradigmas</h3>
+    <p>Las utilidades de respaldo físico se dividen según la arquitectura de su entorno de ejecución y diseño gráfico:</p>
+    
+    <div class="grid-tech">
+      <div class="tech-item" onclick="showProgInfo('low')">
+        <h4>Sistemas Minimalistas de Pre-arranque</h4>
+        <p><strong>Dificultad: Alta / Media-Alta.</strong> Corren sobre DOS o entornos embebidos en modo de texto interactivo gris/azul de baja resolución.</p>
+      </div>
+      <div class="tech-item" onclick="showProgInfo('high')">
+        <h4>Sistemas Modernos en Entornos de Sistema Vivo</h4>
+        <p><strong>Dificultad: Baja / Accesible.</strong> Interfaces nativas de ventanas ejecutadas directamente desde el sistema operativo o entornos PE modernos.</p>
+      </div>
+    </div>
+    <div id="prog-box" class="info-box">Selecciona un paradigma de interfaz para evaluar sus pros, contras y curvas de aprendizaje.</div>
+  </div>
+</div>
+
+<div id="panel-sim" class="panel">
+  <div class="sim-layout">
+    <div>
+      <div class="sim-repo-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div style="font-weight:700; font-family:'Bricolage Grotesque'; font-size:18px;">ENTORNO DE HARDWARE EN VIVO</div>
+          <div style="font-size:13px; color:var(--text3)">Estado de Ejecución: <span id="currentModeLabel" style="color:var(--accent); font-weight:700;">Esperando Selección de Software</span></div>
+        </div>
+
+        <div id="uiLowLevel" class="mock-interface-card">
+          <div class="mock-title-bar">
+            <span>Disk32 Environment Ver 11.5</span>
+            <span>[X]</span>
+          </div>
+          <p id="lowStepInstruction" style="color:#00e5ff; font-size:12px; margin-bottom:8px;">&gt; Paso 3: Haga clic en la tabla inferior para elegir disco de origen:</p>
+          <div style="border:1px solid #555e78; font-size:12px; background:#111; margin-bottom: 10px;">
+            <div style="display:flex; background:#0022aa; font-weight:bold; padding:2px;">
+              <span style="width:15%">Drive</span><span style="width:25%">Location</span><span style="width:35%">Model</span><span style="width:25%">Size(MB) / Free</span>
+            </div>
+            <div id="lowDrive1" class="disk-row-low" style="padding:4px; cursor:pointer;" onclick="selectLowDrive(1)">
+              [1] &nbsp;&nbsp;&nbsp; Local &nbsp;&nbsp;&nbsp;&nbsp; HTS721010G9SA00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 95396 MB (Datos: 62000 MB Ocupados)
+            </div>
+            <div id="lowDrive2" class="disk-row-low" style="padding:4px; cursor:pointer;" onclick="selectLowDrive(2)">
+              [2] &nbsp;&nbsp;&nbsp; Local &nbsp;&nbsp;&nbsp;&nbsp; Kingston DataTraveler &nbsp; 3935 MB (Pendrive de Respaldo)
+            </div>
+            <div id="lowDrive3" class="disk-row-low" style="padding:4px; cursor:pointer;" onclick="selectLowDrive(3)">
+              [3] &nbsp;&nbsp;&nbsp; Local &nbsp;&nbsp;&nbsp;&nbsp; OS_Volumes_Target &nbsp;&nbsp;&nbsp;&nbsp; <span id="lowDrive3Text">99330 MB (SSD Vacío Destino)</span>
+            </div>
+          </div>
+          
+          <div id="lowTargetWarning">Selecciona disco de destino</div>
+
+          <div style="text-align:right;">
+            <span style="font-size:11px; color:var(--text3);">Teclas de acceso rápido activas: ALT+O (OK), ALT+C (Cancel)</span>
+          </div>
+        </div>
+
+        <div id="uiHighLevel" class="mock-modern-ui">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:6px;">
+            <span style="font-weight:600; font-size:14px; color:#fff;">Reflect & Backup Engine - Free Edition v7.1</span>
+            <div style="display:flex; gap:10px; font-size:12px; color:var(--accent);">
+              <span>Disk Image</span> <span>|</span> <span>Restore Tasks</span>
+            </div>
+          </div>
+          
+          <p id="highStepInstruction" style="font-size:13px; color:var(--accent); font-weight:600; margin-bottom:10px;">Paso 1: Seleccione el disco de ORIGEN de la lista:</p>
+
+          <div class="disk-row" id="highDisk1" onclick="selectHighDrive(1, 'src')">
+            <div style="flex:1;">
+              <div style="font-size:13px; font-weight:bold; color:#fff;">GPT Disk 1 [SATA Primario Origen] - 100 GB</div>
+              <div style="font-size:11px; color:var(--text2)">Particiones: Windows (C:) NTFS Active (65 GB Ocupados / 35 GB Libres)</div>
+              <div class="bar-visual"><div class="bar-fill used" style="width:65%"></div></div>
+            </div>
+          </div>
+
+          <div class="disk-row" id="highDisk2" onclick="selectHighDrive(2, 'dst')">
+            <div style="flex:1;">
+              <div style="font-size:13px; font-weight:bold; color:#fff;" id="highDisk2Title">MBR Disk 2 [SSD Destino para Clon o Imagen] - 120 GB</div>
+              <div style="font-size:11px; color:var(--text3)" id="highDisk2Desc">Espacio sin asignar / Unidad primaria limpia no formateada</div>
+              <div class="bar-visual"><div id="highDisk2Bar" class="bar-fill unformatted" style="width:100%"></div></div>
+            </div>
+          </div>
+
+          <div class="disk-row" id="highDisk3" onclick="selectHighDrive(3, 'dst')">
+            <div style="flex:1;">
+              <div style="font-size:13px; font-weight:bold; color:#fff;" id="highDisk3Title">SATA Disk 3 [Pendrive Externo Alternativo] - 4 GB</div>
+              <div style="font-size:11px; color:var(--text3)" id="highDisk3Desc">Espacio libre disponible: 4 GB</div>
+              <div class="bar-visual"><div id="highDisk3Bar" class="bar-fill unformatted" style="width:100%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="realtimeFeedback" class="feedback-box"></div>
+
+        <h4 style="font-size:12px; font-family:'Space Mono'; color:var(--text3); text-transform:uppercase; margin-top:20px;">Consola Termo-Lógica de Operación</h4>
+        <div class="log-terminal" id="logTerminal">
+          <div>[SISTEMA] Selecciona un software en el Panel de Control a la derecha para iniciar la simulación de laboratorio.</div>
+        </div>
+
+        <div id="highButtonsContainer" style="display:none; gap:10px; margin-top:12px;">
+          <button class="btn-add" style="font-size:12px; padding:12px; background:var(--accent);" onclick="setHighAction('clone')">🔗 Asistente de Clonación...</button>
+          <button class="btn-add" style="font-size:12px; padding:12px; background:var(--accent2); color:#fff;" onclick="setHighAction('image')">📦 Asistente de Imagen (.IMG)...</button>
+        </div>
+      </div>
+
+      <div class="validation-box" id="validationBox"></div>
+    </div>
+
+    <div class="sim-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-title">Paso 1: Seleccionar Interfaz Educativa</div>
+        <label class="ctrl-label" style="font-size:13px; color:var(--text2);">Entorno Operativo de Simulación</label>
+        <select class="ctrl-select" id="ctrlAppSelect" onchange="changeActiveSoftware()" style="background:var(--surface2); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; width:100%;">
+          <option value="NONE">-- Seleccione un Software --</option>
+          <option value="LOW">Interfaz Minimalista de Baja Resolución (Heredado DOS)</option>
+          <option value="HIGH">Interfaz de Ventanas Avanzada (Entorno Windows/PE)</option>
+        </select>
+      </div>
+
+      <div class="ctrl-group" id="groupActionType" style="display:none;">
+        <div class="ctrl-title" id="actionTypeTitle">Paso 4: Operación Física Requerida</div>
+        <label class="ctrl-label" style="font-size:13px; color:var(--text2);">Método de volcado</label>
+        <select class="ctrl-select" id="ctrlOpType" style="background:var(--surface2); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; width:100%;">
+          <option value="CLONE">Clonación Completa (Espejo físico directo)</option>
+          <option value="IMAGE">Creación de Imagen Física (Archivo de copia empaquetado)</option>
+        </select>
+      </div>
+
+      <button id="btnExecuteOperation" class="btn-add" style="display:none;" onclick="runPhysicalOperation()">Paso 3 elegir disco de origen</button>
+      <button class="btn-reset" onclick="resetPhysicalSim()">Reiniciar Laboratorio de Discos</button>
+    </div>
+  </div>
+</div>
+
+<div id="panel-quiz" class="panel">
+  <div class="quiz-shell">
+    <div class="quiz-header">
+      <div style="font-size:14px; font-weight:700; color:var(--text3); text-transform:uppercase;">Examen de Clonación y Almacenamiento Estructural</div>
+      <div id="quizCounter" style="font-size:14px; color:var(--accent); font-family:'Space Mono', monospace;">Pregunta 1 de 6</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="quizBar"></div>
+    </div>
+    <div id="quizBody"></div>
+  </div>
+</div>
+
+<script>
+// SIMULADOR STATE
+let selectedApp = "NONE";
+let lowPhase = "SRC"; // "SRC" o "DST"
+let lowSourceDrive = -1;
+let lowTargetDrive = -1;
+
+let highPhase = "SRC"; // "SRC", "DST" o "ACTION"
+let highSourceDrive = -1;
+let highTargetDrive = -1;
+let highSelectedAction = "";
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute('data-theme') === 'dark';
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('themeText').textContent = isDark ? 'Modo Oscuro' : 'Modo Claro';
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(`panel-${tabId}`).classList.add('active');
+}
+
+function showTeoInfo(type) {
+  const box = document.getElementById('teo-box');
+  if (type === 'clon') {
+    box.innerHTML = `<strong>Clonación Directa (Sector a Sector):</strong> Transfiere los datos de un disco físico de forma exacta a otro disco secundario conectado.<br><br>
+    <span style='color:var(--green)'><strong>Cuándo usarla:</strong></span> Ideal para upgrades de hardware (migrar un disco mecánico viejo a un SSD nuevo). Al terminar, desconectas el disco viejo, conectas el nuevo y el sistema operativo arranca inmediatamente con las mismas configuraciones exactas sin necesidad de reinstalar nada.`;
+  }
+  if (type === 'img') {
+    box.innerHTML = `<strong>Imagen de Almacenamiento (.IMG/.VMDK):</strong> Genera una copia estructural consolidada dentro de un archivo contenedor único que representa de forma virtual el contenido exacto del bloque.<br><br>
+    <span style='color:var(--green)'><strong>Cuándo usarla:</strong></span> Ideal para resguardos históricos periódicos de servidores antes de un cambio crítico. Permite almacenar decenas de imágenes de diferentes computadoras dentro de un mismo NAS corporativo de gran capacidad, algo imposible con la clonación directa.`;
+  }
+}
+
+function showProgInfo(type) {
+  const box = document.getElementById('prog-box');
+  if(type === 'low') {
+    box.innerHTML = `<strong>Entornos Clásicos de Pre-Arranque (Ej: Sistemas basados en interfaces primitivas DOS):</strong><br><br>
+    <strong>¿Por qué se consideran difíciles?:</strong> Carecen de soporte automatizado para ratones USB modernos en ciertas placas base, la interfaz es rígida y utiliza menús desplegables controlados estrictamente por teclado. El peligro crítico radica en que las unidades de disco se listan por ID físicos de puerto (Drive 1, Drive 2) y no por nombres lógicos o letras de partición, facilitando que un error humano invierta el disco 'Origen' con el 'Destino', borrando el sistema de producción corporativo al instante.`;
+  }
+  if(type === 'high') {
+    box.innerHTML = `<strong>Entornos de Ventanas Modernos (Ej: Aplicaciones Concurrentes del Sistema OS o WinPE):</strong><br><br>
+    <strong>¿Por qué se consideran fáciles e intuitivos?:</strong> Cuentan con un diseño visual con barras de color que exponen claramente el sistema de archivos (NTFS/FAT32), identifican marcas de fábrica del almacenamiento (Kingston, Western Digital), muestran el espacio libre remanente en tiempo real y guían al operador mediante asistentes paso a paso (Wizards) disminuyendo radicalmente el error en la selección de discos.`;
+  }
+}
+
+// LOGICA SIMULADOR
+function changeActiveSoftware() {
+  const app = document.getElementById('ctrlAppSelect').value;
+  selectedApp = app;
+  
+  // Reset estados internos al cambiar
+  lowPhase = "SRC"; lowSourceDrive = -1; lowTargetDrive = -1;
+  highPhase = "SRC"; highSourceDrive = -1; highTargetDrive = -1; highSelectedAction = "";
+
+  document.getElementById('uiLowLevel').classList.remove('active');
+  document.getElementById('uiHighLevel').classList.remove('active');
+  document.getElementById('groupActionType').style.display = "none";
+  document.getElementById('btnExecuteOperation').style.display = "none";
+  document.getElementById('realtimeFeedback').classList.remove('visible');
+  document.getElementById('validationBox').classList.remove('visible');
+  document.getElementById('lowTargetWarning').style.display = "none";
+  document.getElementById('highButtonsContainer').style.display = "none";
+
+  // Limpiar estilos visuales de los renglones
+  document.querySelectorAll('.disk-row-low').forEach(d => { d.className = "disk-row-low"; d.style.background="none"; });
+  document.querySelectorAll('.disk-row').forEach(d => d.className = "disk-row");
+
+  const log = document.getElementById('logTerminal');
+  const actionBtn = document.getElementById('btnExecuteOperation');
+
+  if(app === 'LOW') {
+    document.getElementById('uiLowLevel').classList.add('active');
+    // Se mantiene OCULTADO de manera explícita el bloque del Paso 4/Método de Volcado
+    document.getElementById('groupActionType').style.display = "none";
+    
+    actionBtn.style.display = "block";
+    actionBtn.textContent = "Paso 3 elegir disco de origen";
+    
+    document.getElementById('currentModeLabel').textContent = "Entorno Gráfico Minimalista de Bajo Nivel";
+    document.getElementById('lowStepInstruction').innerHTML = `&gt; Paso 3: Haga clic en la tabla inferior para elegir disco de origen:`;
+    log.innerHTML += `<div>[SISTEMA] Cargando entorno DOS de bajo nivel... Listo.</div>`;
+    log.innerHTML += `<div class="log-alert">[CONSOLA LOW] REQUERIDO: Haga clic en el disco de ORIGEN (Source) dentro de la tabla interactiva.</div>`;
+  } else if(app === 'HIGH') {
+    document.getElementById('uiHighLevel').classList.add('active');
+    // En la interfaz avanzada sí mostramos el control del Paso 4
+    document.getElementById('groupActionType').style.display = "block";
+    document.getElementById('actionTypeTitle').textContent = "Paso 4: Operación Física Requerida";
+    
+    actionBtn.style.display = "block";
+    actionBtn.textContent = "⚡ Paso 5: Ejecutar Proceso Lógico y Comprobar";
+    document.getElementById('highButtonsContainer').style.display = "flex";
+    
+    document.getElementById('currentModeLabel').textContent = "Entorno Moderno con Soporte de Ventanas Integrado";
+    document.getElementById('highStepInstruction').innerHTML = `Paso 2: Haga clic sobre el disco de <strong>ORIGEN</strong> de datos (SATA Primario Origen).`;
+    log.innerHTML += `<div>[SISTEMA] Inicializando administradores lógicos... Discos montados en vivo.</div>`;
+    log.innerHTML += `<div class="log-alert">[CONSOLA WINDOWS] Alerta del Wizard: Seleccione un volumen de origen válido para abrir canales de copia paralela.</div>`;
+  } else {
+    document.getElementById('currentModeLabel').textContent = "Esperando Selección de Software";
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+// LOGICA ENTORNO LOW (TEXTO)
+function selectLowDrive(id) {
+  const log = document.getElementById('logTerminal');
+  const actionBtn = document.getElementById('btnExecuteOperation');
+  
+  if (lowPhase === "SRC") {
+    lowSourceDrive = id;
+    document.querySelectorAll('.disk-row-low').forEach(d => d.className = "disk-row-low");
+    document.getElementById('lowDrive' + id).classList.add('selected-src');
+    
+    log.innerHTML += `<div>[CONSOLA LOW] ASIGNACIÓN: Origen fijado en Drive [${id}].</div>`;
+    log.innerHTML += `<div class="log-alert">[CONSOLA LOW] Se requiere definir el disco DESTINO (Target Drive). Haga clic en el disco objetivo de la tabla.</div>`;
+    
+    document.getElementById('lowStepInstruction').innerHTML = `&gt; Seleccione el disco de <strong>DESTINO (Target Drive)</strong> haciendo clic en su fila:`;
+    
+    // Mostrar aviso dinámico solicitado justo encima del shortcut
+    document.getElementById('lowTargetWarning').style.display = "block";
+    
+    lowPhase = "DST";
+  } else if (lowPhase === "DST") {
+    if (id === lowSourceDrive) {
+      log.innerHTML += `<div class="log-alert">[CONSOLA LOW] ERROR: El disco destino no puede ser idéntico al disco origen. Reintente.</div>`;
+      return;
+    }
+    lowTargetDrive = id;
+    document.getElementById('lowDrive' + id).classList.add('selected-dst');
+    
+    log.innerHTML += `<div>[CONSOLA LOW] ASIGNACIÓN: Destino fijado en Drive [${id}].</div>`;
+    log.innerHTML += `<div class="log-success">[CONSOLA LOW] Flujo completo. Origen: Drive ${lowSourceDrive} -> Destino: Drive ${lowTargetDrive}. Listo para ejecutar el paso 5.</div>`;
+    
+    document.getElementById('lowStepInstruction').innerHTML = `&gt; Flujo Configurado. Presione el botón de abajo 'Paso 5 : Ejecutar poseso lógico y comprobar'.`;
+    
+    // Ocultar aviso dinámico al seleccionar destino
+    document.getElementById('lowTargetWarning').style.display = "none";
+    
+    // Cambiar el texto del botón
+    actionBtn.textContent = "Paso 5 : Ejecutar poseso lógico y comprobar";
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+// LOGICA ENTORNO HIGH (VENTANAS)
+function selectHighDrive(id, enforcedType) {
+  const log = document.getElementById('logTerminal');
+  
+  if (highPhase === "SRC") {
+    if(id !== 1) {
+      log.innerHTML += `<div class="log-alert">[CONSOLA WINDOWS] Advertencia: Seleccione el Disk 1 (SATA Primario Origen) como la fuente del sistema operativo.</div>`;
+      return;
+    }
+    highSourceDrive = id;
+    document.getElementById('highDisk' + id).classList.add('selected-src');
+    
+    log.innerHTML += `<div>[CONSOLA WINDOWS] SELECCIÓN: Fuente establecida en Disk [${id}].</div>`;
+    log.innerHTML += `<div class="log-alert">[CONSOLA WINDOWS] ADVERTENCIA DEL ASISTENTE: Falta mapear la ruta destino de los bloques. Por favor, haga clic sobre la unidad de DESTINO.</div>`;
+    
+    document.getElementById('highStepInstruction').innerHTML = `Paso 3: Seleccione el disco de <strong>DESTINO</strong> para recibir los bloques (Disk 2 o Disk 3):`;
+    highPhase = "DST";
+  } else if (highPhase === "DST") {
+    if (id === highSourceDrive) {
+      log.innerHTML += `<div class="log-alert">[CONSOLA WINDOWS] Operación no permitida: Sobreescritura circular detectada. Elija otro disco de destino.</div>`;
+      return;
+    }
+    highTargetDrive = id;
+    document.getElementById('highDisk' + id).classList.add('selected-dst');
+    
+    log.innerHTML += `<div>[CONSOLA WINDOWS] SELECCIÓN: Destino mapeado en Disk [${id}].</div>`;
+    log.innerHTML += `<div class="log-success">[CONSOLA WINDOWS] Listo. Parámetros de hardware guardados. Elija el tipo de proceso haciendo clic en 'Asistente de Clonación' o 'Asistente de Imagen'.</div>`;
+    
+    document.getElementById('highStepInstruction').innerHTML = `Paso 4: Seleccione una acción de volcado usando los botones inferiores.`;
+    highPhase = "ACTION";
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function setHighAction(action) {
+  const log = document.getElementById('logTerminal');
+  if (highPhase !== "ACTION" && highTargetDrive === -1) {
+    log.innerHTML += `<div class="log-alert">[CONSOLA WINDOWS] Bloqueo de seguridad: Debe completar la selección secuencial de Origen y Destino antes de definir el motor de copia.</div>`;
+    log.scrollTop = log.scrollHeight;
+    return;
+  }
+  highSelectedAction = action;
+  log.innerHTML += `<div>[CONSOLA WINDOWS] CONFIGURACIÓN: Modo de proceso fijado en [${action.toUpperCase()}].</div>`;
+  log.innerHTML += `<div class="log-success">[CONSOLA WINDOWS] Listo para procesar. Haga clic en el botón inferior 'Ejecutar Proceso Lógico y Comprobar'.</div>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// COMPROBACIÓN Y AUTOSCROLL
+function runPhysicalOperation() {
+  const log = document.getElementById('logTerminal');
+  const valBox = document.getElementById('validationBox');
+  
+  if (selectedApp === 'LOW' && lowSourceDrive === -1) {
+    log.innerHTML += `<div class="log-alert">[SISTEMA] Por favor, primero elija el disco de Origen en la tabla antes de avanzar.</div>`;
+    log.scrollTop = log.scrollHeight;
+    return;
+  }
+
+  valBox.className = "validation-box visible";
+  
+  if (selectedApp === 'LOW') {
+    if (lowSourceDrive === -1 || lowTargetDrive === -1) {
+      valBox.innerHTML = `
+        <div style="font-weight:700; color:var(--red); margin-bottom:6px;">❌ COMPROBACIÓN: FALLO CRÍTICO</div>
+        <p style="font-size:13.5px;">No se completaron los pasos secuenciales de direccionamiento. El hardware requiere origen y destino asignados explícitamente.</p>
+      `;
+      log.innerHTML += `<div class="log-alert">[COMPROBACIÓN LOW] FAILED: Faltan descriptores lógicos de unidad.</div>`;
+      
+      // Bajar la pantalla automáticamente hasta el resultado de comprobación
+      valBox.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    log.innerHTML += `<div>[COMPROBACIÓN LOW] Simulando proceso a bajo nivel... Leyendo MBR sector a sector...</div>`;
+    
+    if (lowSourceDrive === 1 && lowTargetDrive === 3) {
+      document.getElementById('lowDrive3Text').innerHTML = `99330 MB (<span style="color:var(--green); font-weight:bold;">62000 MB OCUPADOS tras duplicación</span>)`;
+      
+      valBox.innerHTML = `
+        <div style="font-weight:700; color:var(--green); margin-bottom:6px;">🎉 COMPROBACIÓN: ¡CLONACIÓN INDUSTRIAL EXITOSA!</div>
+        <p style="font-size:13.5px;">El volcado sector a sector hacia el SSD Destino (Drive 3) se ejecutó de forma íntegra. El sistema destino ha copiado los 62,000 MB lógicos ocupados del sistema operativo de origen de manera idéntica. ¡El disco es booteable!</p>
+      `;
+      log.innerHTML += `<div class="log-success">[COMPROBACIÓN LOW] SUCCESS: Verificación MD5 coincidente. Espacio ocupado en destino actualizado a 62000 MB de bloques crudos.</div>`;
+    } 
+    else if (lowTargetDrive === 2) {
+      valBox.innerHTML = `
+        <div style="font-weight:700; color:var(--red); margin-bottom:6px;">❌ COMPROBACIÓN: COMPORTAMIENTO CATASTRÓFICO</div>
+        <p style="font-size:13.5px;"><strong>Fallo por desbordamiento (Buffer Overflow):</strong> Intentaste volcar un sistema con 62,000 MB de información activa en un almacenamiento físico destino de tan solo 3,935 MB. Al ser un programa heredado rígido sin advertencias previas de tamaño, el proceso corrió a ciegas truncando los archivos del sistema y corrompiendo la tabla MBR.</p>
+      `;
+      log.innerHTML += `<div class="log-alert">[COMPROBACIÓN LOW] CRITICAL ERROR: Disk Target full (Sector 8058880 out of bounds). Tabla corrupta.</div>`;
+    } 
+    else {
+      valBox.innerHTML = `
+        <div style="font-weight:700; color:var(--amber); margin-bottom:6px;">⚠️ COMPROBACIÓN: VOLCADO INVÁLIDO</div>
+        <p style="font-size:13.5px;">Has tomado como origen un volumen vacío o una combinación inestable (ej. clonar el pendrive vacío sobre el disco primario). No se ha copiado información útil de arranque.</p>
+      `;
+      log.innerHTML += `<div class="log-alert">[COMPROBACIÓN LOW] WARNING: Clonación realizada con bloques nulos o vacíos.</div>`;
+    }
+  } 
+  
+  else if (selectedApp === 'HIGH') {
+    if (highSourceDrive === -1 || highTargetDrive === -1 || highSelectedAction === "") {
+      valBox.innerHTML = `
+        <div style="font-weight:700; color:var(--red); margin-bottom:6px;">❌ COMPROBACIÓN: INTERRUPCIÓN DE ASISTENTE</div>
+        <p style="font-size:13.5px;">Debe completar todos los pasos en la interfaz de ventanas: Configurar Origen (Disk 1), Destino (Disk 2 o 3) y el método operativo deseado en los botones del asistente.</p>
+      `;
+      log.innerHTML += `<div class="log-alert">[COMPROBACIÓN WINDOWS] Cancelado: El hilo de ejecución requiere origen, destino y acción explícitas.</div>`;
+      
+      // Bajar la pantalla automáticamente hasta el resultado de comprobación
+      valBox.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    log.innerHTML += `<div>[COMPROBACIÓN WINDOWS] Ejecutando análisis inteligente de clusters concurrentes en caliente...</div>`;
+    
+    if (highSourceDrive === 1 && highTargetDrive === 2) {
+      if (highSelectedAction === 'clone') {
+        document.getElementById('highDisk2Title').innerHTML = `MBR Disk 2 [SSD Destino - CLONADO COMPLETO] - 120 GB`;
+        document.getElementById('highDisk2Desc').innerHTML = `<span style="color:var(--green); font-weight:bold;">Estado: Clon Exitoso. Partición NTFS clonada: 65 GB Ocupados</span> / 55 GB Libres remanentes`;
+        document.getElementById('highDisk2Bar').className = "bar-fill copied-data";
+        document.getElementById('highDisk2Bar').style.width = "54%"; 
+        
+        valBox.innerHTML = `
+          <div style="font-weight:700; color:var(--green); margin-bottom:6px;">🎉 COMPROBACIÓN: ¡CLONACIÓN INDUSTRIAL EXITOSA!</div>
+          <p style="font-size:13.5px;">El entorno inteligente adaptó la geometría del disco origen de 100 GB al almacenamiento SSD destino de 120 GB. Copió con precisión los 65 GB de datos activos y redimensionó de forma segura los sectores remanentes como espacio libre útil.</p>
+        `;
+        log.innerHTML += `<div class="log-success">[COMPROBACIÓN WINDOWS] SUCCESS: Operación 'Clone' verified. Destino actualizado con un 54% de espacio ocupado real (65 GB).</div>`;
+      } else {
+        document.getElementById('highDisk2Title').innerHTML = `MBR Disk 2 [SSD Destino - REPOSITORIO] - 120 GB`;
+        document.getElementById('highDisk2Desc').innerHTML = `<span style="color:var(--green); font-weight:bold;">Contenedor guardado: imagen_respaldo.img (45 GB comprimidos ocupados)</span> / 75 GB Libres`;
+        document.getElementById('highDisk2Bar').className = "bar-fill copied-data";
+        document.getElementById('highDisk2Bar').style.width = "37.5%"; 
+        
+        valBox.innerHTML = `
+          <div style="font-weight:700; color:var(--green); margin-bottom:6px;">📦 COMPROBACIÓN: IMAGEN ENCAPSULADA CON ÉXITO</div>
+          <p style="font-size:13.5px;">El software comprimió los bloques del Disk 1 y generó un archivo único empaquetado de respaldo dentro del almacenamiento destino. Gracias a la compresión inteligente de ceros lógicos, los 65 GB originales ocupan solo 45 GB físicos en el repositorio destino.</p>
+        `;
+        log.innerHTML += `<div class="log-success">[COMPROBACIÓN WINDOWS] SUCCESS: Operación 'Image' completada. Archivo .img consolidado y verificado mediante Checksum hash. Espacio ocupado en disco repositorio: 45 GB.</div>`;
+      }
+    } 
+    else if (highTargetDrive === 3) {
+      valBox.innerHTML = `
+        <div style="font-weight:700; color:var(--red); margin-bottom:6px;">❌ COMPROBACIÓN: ABORTO PREVENTIVO DE SEGURIDAD</div>
+        <p style="font-size:13.5px;">El software moderno de ventanas interceptó que el Disk 3 solo posee 4 GB de espacio físico. Al requerir un mínimo de 65 GB para los datos activos (clonación) o 45 GB (imagen comprimida), el motor denegó la inyección de bloques y protegió las unidades para salvaguardar la integridad de los datos del taller informático.</p>
+      `;
+      log.innerHTML += `<div class="log-alert">[COMPROBACIÓN WINDOWS] FAILED: Insufficient space on Disk 3. Operation denied by Safety-Wizard.</div>`;
+    }
+  }
+  log.scrollTop = log.scrollHeight;
+  
+  // Bajar de forma automática y fluida la pantalla hasta la caja de COMPROBACIÓN
+  valBox.scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetPhysicalSim() {
+  selectedApp = "NONE";
+  lowPhase = "SRC"; lowSourceDrive = -1; lowTargetDrive = -1;
+  highPhase = "SRC"; highSourceDrive = -1; highTargetDrive = -1; highSelectedAction = "";
+  
+  document.getElementById('ctrlAppSelect').value = "NONE";
+  document.getElementById('uiLowLevel').classList.remove('active');
+  document.getElementById('uiHighLevel').classList.remove('active');
+  document.getElementById('groupActionType').style.display = "none";
+  document.getElementById('btnExecuteOperation').style.display = "none";
+  document.getElementById('realtimeFeedback').classList.remove('visible');
+  document.getElementById('validationBox').classList.remove('visible');
+  document.getElementById('lowTargetWarning').style.display = "none";
+  document.getElementById('highButtonsContainer').style.display = "none";
+  
+  // Resetear textos y barras interactivas
+  document.getElementById('lowDrive3Text').innerHTML = `99330 MB (SSD Vacío Destino)`;
+  document.getElementById('highDisk2Title').innerHTML = `MBR Disk 2 [SSD Destino para Clon o Imagen] - 120 GB`;
+  document.getElementById('highDisk2Desc').innerHTML = `Espacio sin asignar / Unidad primaria limpia no formateada`;
+  document.getElementById('highDisk2Bar').className = "bar-fill unformatted";
+  document.getElementById('highDisk2Bar').style.width = "100%";
+  
+  document.querySelectorAll('.disk-row-low').forEach(d => { d.className = "disk-row-low"; d.style.background = "none"; });
+  document.querySelectorAll('.disk-row').forEach(d => d.className = "disk-row");
+
+  document.getElementById('logTerminal').innerHTML = `<div>[SISTEMA] Almacenamientos virtuales formateados. Consola limpia.</div>`;
+  document.getElementById('currentModeLabel').textContent = "Esperando Selección de Software";
+}
+
+// MOTOR EVALUADOR 
+const quizQuestions = [
+  { q: "Cuando clonas un disco físico 'Origen' a otro de 'Destino' para realizar un upgrade en una computadora de escritorio, ¿qué ocurre con el sector de arranque (MBR o GPT) y las tablas de asignación?", a: "Se omiten por seguridad y deben ser reconstruidos manualmente", b: "Se transfieren de manera exacta en el copiado por bloques", c: "Solo se copian si las unidades son de la misma marca de fábrica", correct: "b", reason: "La clonación física copia el disco de manera estructural sector por sector. Esto arrastra de forma idéntica las firmas digitales, códigos de boot (MBR/GPT) y los índices lógicos de las particiones." },
+  { q: "¿Cuál se considera la principal desventaja operativa de los programas clásicos minimalistas que corren en entornos previos al arranque (DOS)?", a: "Que no permiten comprimir los archivos resultantes", b: "Su interfaz basada en caracteres que identifica los discos por numeración física rígida, aumentando el peligro de confundir el origen con el destino", c: "Que dañan de forma permanente los cabezales del lector mecánico", correct: "b", reason: "Al no poseer asistentes de ventanas, nombres lógicos o barras de color intuitivas, un error tipográfico o un clic en el índice numérico incorrecto (ej. elegir Drive 2 en vez de Drive 1) sobrescribirá el disco de producción inmediatamente." },
+  { q: "Si deseas respaldar la configuración completa de 10 estaciones de trabajo idénticas en una oficina para guardarlas centralizadas dentro de un servidor de almacenamiento en red (NAS), ¿cuál es el método adecuado?", a: "Clonar directamente el disco de cada estación hacia el NAS de uno en uno", b: "Generar un archivo contenedor de Imagen física (.IMG o .VHD) para cada equipo y guardarlas en el espacio compartido del NAS", c: "Hacer un respaldo lógicamente incremental usando comandos de consola planos", correct: "b", reason: "La clonación física requiere un disco duro de hardware físico dedicado para cada réplica. En cambio, las imágenes empaquetan la estructura en archivos independientes, permitiendo guardar múltiples copias en un mismo repositorio." },
+  { q: "En la interfaz moderna basada en ventanas concurrentes de sistemas operativos vivos, ¿qué ventaja fundamental asiste al operario técnico antes de iniciar un proceso de clonación?", a: "Desactiva los sistemas de archivos de red para acelerar el microprocesador", b: "Muestra alertas en tiempo real sobre la capacidad del disco destino y barras de uso visuales para mitigar el error humano", c: "Obliga a formatear todas las particiones en formato FAT16 de baja capacidad", correct: "b", reason: "Las interfaces visuales modernas leen los descriptores lógicos de los discos duros, exponiendo marcas, particiones y barras cromáticas que impiden al usuario clonar un disco grande dentro de uno de menor tamaño por descuido." },
+  { q: "¿Qué significa que una herramienta realice una clonación 'Sector por Sector' (o bit a bit) comparada con una clonación inteligente basada en espacio ocupado?", a: "Que copiará absolutamente todas las áreas del disco duro, incluyendo sectores vacíos y archivos borrados, tardando mucho más tiempo", b: "Que el proceso se hace de manera inalámbrica por aire", c: "Que el software solo lee la partición oculta de Microsoft reserved", correct: "a", reason: "La duplicación sector a sector pura ignora la lógica del sistema de archivos e imita la superficie del disco al 100%. Por ello, transfiere datos útiles y sectores marcados como libres de forma indiscrimada." },
+  { q: "Tienes un disco duro origen de 500 GB con solo 80 GB utilizados con el sistema operativo Windows. Deseas migrar a un nuevo disco SSD de 240 GB de alta velocidad. ¿Es viable realizar una clonación?", a: "No, el disco destino debe ser obligatoriamente del mismo tamaño o mayor al origen físico en cualquier circunstancia", b: "Sí, siempre que el software moderno admita clonación inteligente reduciendo el espacio libre sin asignar del volumen destino para ajustarlo a los 80 GB reales de datos", c: "Únicamente si se eliminan todas las tablas de partición primarias del disco origen antes de iniciar", correct: "b", reason: "Las utilidades de clonación avanzadas analizan el volumen real de datos. Al ver que los datos ocupan solo 80 GB, recalculan la geometría para encajarlos dentro de las limitantes físicas del SSD destino de 240 GB." }
+];
+
+let currentQuestion = 0;
+let userAnswers = [];
+
+function renderQuestion() {
+  const container = document.getElementById('quizBody');
+  const counter = document.getElementById('quizCounter');
+  const bar = document.getElementById('quizBar');
+
+  if (currentQuestion >= quizQuestions.length) {
+    renderQuizResults();
+    return;
+  }
+
+  counter.textContent = `Pregunta ${currentQuestion + 1} de ${quizQuestions.length}`;
+  bar.style.width = ((currentQuestion + 1) / quizQuestions.length) * 100 + "%";
+
+  let qData = quizQuestions[currentQuestion];
+  
+  container.innerHTML = `
+    <div class="quiz-q">
+      <span class="q-num">Q1</span>
+      <span>${qData.q}</span>
+    </div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="processQuizSelection('a')">A) ${qData.a}</button>
+      <button class="quiz-opt" onclick="processQuizSelection('b')">B) ${qData.b}</button>
+      <button class="quiz-opt" onclick="processQuizSelection('c')">C) ${qData.c}</button>
+    </div>
+  `;
+}
+
+function processQuizSelection(letter) {
+  userAnswers.push(letter);
+  currentQuestion++;
+  renderQuestion();
+}
+
+function renderQuizResults() {
+  const container = document.getElementById('quizBody');
+  document.getElementById('quizCounter').textContent = "Evaluación de Bloques Concluida";
+  
+  let correctHits = 0;
+  quizQuestions.forEach((q, i) => {
+    if (userAnswers[i] === q.correct) correctHits++;
+  });
+
+  let pct = Math.round((correctHits / quizQuestions.length) * 100);
+  let pass = correctHits >= Math.ceil(quizQuestions.length / 2);
+
+  let htmlOutput = `
+    <div style="text-align:center; padding: 25px 0;">
+      <h2 style="font-size:32px; margin-bottom: 10px; color:${pass ? 'var(--green)' : 'var(--amber)'}">
+        ${pass ? '¡Evaluación Completada!' : 'Sigue Practicando'}
+      </h2>
+      <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: inline-block; min-width: 280px; margin-bottom: 20px;">
+        <div style="font-size: 14px; color: var(--text3); text-transform: uppercase; font-family: 'Space Mono', monospace;">Aciertos de Arquitectura</div>
+        <div style="font-size: 48px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; color: #fff; margin: 5px 0;">
+          ${correctHits} <span style="font-size: 24px; color: var(--text3); font-weight: 400;">/ ${quizQuestions.length}</span>
+        </div>
+        <div style="font-size: 16px; font-weight: 600; color: ${pass ? 'var(--green)' : 'var(--red)'}">${pct}% Correcto</div>
+      </div>
+  `;
+
+  htmlOutput += `<div class="quiz-review-container">`;
+  htmlOutput += `<h3 style="color: var(--accent); margin-bottom: 15px;">📋 Revisión Detallada del Examen</h3>`;
+
+  quizQuestions.forEach((q, i) => {
+    let userAns = userAnswers[i];
+    let isCorrect = userAns === q.correct;
+
+    htmlOutput += `
+      <div class="review-item">
+        <div class="review-q-title">Pregunta ${i + 1}: ${q.q}</div>
+    `;
+
+    let classA = (userAns === 'a') ? (isCorrect ? "user-selected-correct" : "user-selected-incorrect") : (!isCorrect && q.correct === 'a' ? "correct-unselected" : "");
+    htmlOutput += `<div class="review-opt-line ${classA}">A) ${q.a}</div>`;
+
+    let classB = (userAns === 'b') ? (isCorrect ? "user-selected-correct" : "user-selected-incorrect") : (!isCorrect && q.correct === 'b' ? "correct-unselected" : "");
+    htmlOutput += `<div class="review-opt-line ${classB}">B) ${q.b}</div>`;
+
+    let classC = (userAns === 'c') ? (isCorrect ? "user-selected-correct" : "user-selected-incorrect") : (!isCorrect && q.correct === 'c' ? "correct-unselected" : "");
+    htmlOutput += `<div class="review-opt-line ${classC}">C) ${q.c}</div>`;
+
+    if (!isCorrect) {
+      htmlOutput += `
+        <div class="review-reminder-box">
+          💡 <strong>Respuesta Correcta:</strong> Opción ${q.correct.toUpperCase()}) ${q[q.correct]}.<br>
+          <strong>Fundamento académico:</strong> ${q.reason}
+        </div>
+      `;
+    }
+
+    htmlOutput += `</div>`;
+  });
+
+  htmlOutput += `</div><button class="btn-add" style="width:240px; margin: 25px auto 0;" onclick="restartQuiz()">🔄 Volver a Empezar Test</button></div>`;
+  container.innerHTML = htmlOutput;
+}
+
+function restartQuiz() {
+  currentQuestion = 0; userAnswers = []; renderQuestion();
+}
+
+window.onload = function() {
+  renderQuestion();
+};
+</script>
+</body>
+</html>

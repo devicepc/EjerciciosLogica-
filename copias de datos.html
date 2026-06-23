@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Estrategias de Respaldo · Laboratorio Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&family=Bricolage+Grotesque:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ===== CONFIGURACIÓN ESTÉTICA (Idéntica al Lab de Particiones) ===== */
+  :root[data-theme="dark"] {
+    --bg: #0d0f14;
+    --bg2: #0a0c12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #252a3a;
+    --border: #2d3350;
+    --border-soft: rgba(45,51,80,0.5);
+    --accent: #00e5ff;
+    --accent-soft: rgba(0,229,255,0.12);
+    --accent2: #7c5cfc;
+    --green: #2ecc8a;
+    --amber: #f5a623;
+    --red: #f25656;
+    --text: #e8ecf4;
+    --text2: #8b93a8;
+    --text3: #555e78;
+    --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --header-gradient: linear-gradient(135deg, #0a0c12 0%, #131a2e 50%, #0a0c12 100%);
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fb;
+    --bg2: #ffffff;
+    --surface: #ffffff;
+    --surface2: #f0f3f9;
+    --surface3: #e4e9f2;
+    --border: #d4dae8;
+    --border-soft: rgba(180,190,210,0.5);
+    --accent: #0099bb;
+    --accent-soft: rgba(0,153,187,0.10);
+    --accent2: #6242e0;
+    --green: #1e9e6b;
+    --amber: #d18a0c;
+    --red: #d63838;
+    --text: #1a1f33;
+    --text2: #50587a;
+    --text3: #8893ad;
+    --shadow: 0 4px 20px rgba(50,70,110,0.10);
+    --header-gradient: linear-gradient(135deg, #1a1f33 0%, #2a3050 50%, #1a1f33 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+    min-height: 100vh; padding-bottom: 80px; transition: background 0.3s, color 0.3s;
+    font-size: 16px; line-height: 1.6;
+  }
+
+  header.brand { background: var(--header-gradient); border-bottom: 1px solid rgba(0,229,255,0.15); position: relative; }
+  .brand-strip { display: flex; justify-content: space-between; align-items: center; padding: 14px 40px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .brand-strip-left { display: flex; align-items: center; gap: 15px; font-size: 14px; color: rgba(255,255,255,0.65); }
+  .brand-link { color: var(--accent) !important; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; text-decoration: none; }
+  .theme-toggle { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); border-radius: 24px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .header-hero { padding: 40px 40px 36px; }
+  .header-chip { display: inline-flex; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px; }
+  header.brand h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  header.brand h1 .h-accent { color: var(--accent); }
+  header.brand p { font-size: 16px; color: rgba(255,255,255,0.65); max-width: 800px; }
+
+  .tabs { display: flex; gap: 6px; padding: 0 40px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .tab { padding: 16px 20px; font-size: 15px; font-weight: 600; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .panel { display: none; padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
+  .panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: #fff; margin-bottom: 12px; }
+  h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; color: var(--accent); margin: 18px 0 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  p { color: var(--text2); margin-bottom: 16px; font-size: 15px; }
+
+  /* ===== LÍNEA DE TIEMPO INTERACTIVA ===== */
+  .timeline-layout { display: flex; justify-content: space-between; gap: 10px; margin: 20px 0; background: var(--surface2); padding: 16px; border-radius: 10px; border: 1px solid var(--border); }
+  .timeline-day { flex: 1; background: var(--surface3); border: 1px solid var(--border); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+  .timeline-day:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .day-title { font-family: 'Space Mono', monospace; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .day-status { font-size: 12px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); color: var(--text2); }
+
+  .info-box { background: var(--surface2); border: 1px solid var(--border); padding: 14px 18px; border-radius: 8px; margin-top: 10px; font-size: 14px; min-height: 54px; color: var(--text); }
+  .grid-tech { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px; }
+  .tech-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: border-color 0.2s; }
+  .tech-item:hover { border-color: var(--accent); }
+  .tech-item h4 { font-family: 'Space Mono', monospace; font-size: 14px; color: #fff; margin-bottom: 6px; }
+
+  /* ===== SIMULADOR COMPLETO DE RESPALDOS ===== */
+  .sim-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+  @media (max-width: 1100px) { .sim-layout { grid-template-columns: 1fr; } }
+  
+  .sim-repo-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); }
+  .sim-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .stat-label { font-size: 12px; color: var(--text3); }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; color: var(--text); }
+  
+  .backup-history { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .history-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .badge-type { padding: 4px 8px; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: #fff; }
+  .bg-full { background-color: var(--accent2); }
+  .bg-inc { background-color: #00b4d8; }
+  .bg-diff { background-color: var(--amber); }
+
+  .sim-controls { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+  .ctrl-title { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label { font-size: 13px; color: var(--text2); }
+  .ctrl-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; width: 100%; outline: none; font-size: 14px; }
+  
+  .btn-add { background: var(--accent); color: #001218; border: none; border-radius: 8px; padding: 12px 0; font-size: 15px; font-weight: 700; cursor: pointer; transition: filter 0.2s; width: 100%; }
+  .btn-add:hover { filter: brightness(1.1); }
+  .btn-check { background: var(--green); color: #fff; border: none; border-radius: 8px; padding: 12px 0; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; }
+  .btn-reset { background: none; color: var(--text3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 0; font-size: 13px; cursor: pointer; width: 100%; }
+  
+  .validation-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
+  .validation-box.visible { display: block; }
+  .validation-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+
+  .feedback-box { padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; border: 1px solid transparent; }
+  .feedback-box.visible { display: block; }
+  .fb-good { background: rgba(46, 204, 138, 0.12); border-color: var(--green); color: var(--green); }
+  .fb-bad { background: rgba(245, 166, 35, 0.12); border-color: var(--amber); color: var(--amber); }
+
+  .btn-next-day { background: var(--accent2); color: #fff; border: none; border-radius: 8px; padding: 14px 0; font-size: 15px; font-weight: 700; cursor: pointer; text-align: center; display: none; text-transform: uppercase; letter-spacing: 0.05em; animation: pulseGlow 1.5s infinite alternate; width: 100%; }
+  .btn-next-day.visible { display: block; }
+  @keyframes pulseGlow {
+    from { box-shadow: 0 0 4px rgba(124, 92, 252, 0.4); transform: scale(1); }
+    to { box-shadow: 0 0 16px rgba(124, 92, 252, 0.8); transform: scale(1.02); }
+  }
+
+  .best-practice-card { background: rgba(0, 229, 255, 0.05); border: 1px dashed var(--accent); padding: 16px; border-radius: 10px; margin-top: 16px; display: none; }
+  .best-practice-card.visible { display: block; }
+  
+  .history-corrected { font-size: 11px; color: var(--amber); font-weight: bold; background: rgba(245, 166, 35, 0.15); padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+
+  .learn-box-div { background: var(--surface2); border: 1px solid var(--border); padding: 14px; border-radius: 8px; font-size: 13px; color: var(--text2); display: none; line-height: 1.5; text-align: left; }
+  .learn-box-div.visible { display: block; animation: fadeIn 0.3s ease; }
+  .learn-box-div strong { color: var(--accent); }
+
+  /* ===== QUIZ ===== */
+  .quiz-shell { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); max-width: 800px; margin: 0 auto; }
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .progress-bar-wrap { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%); width: 0%; transition: width 0.3s; }
+  .quiz-q { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; gap: 10px; font-family: 'Bricolage Grotesque', sans-serif; }
+  .q-num { background: var(--accent-soft); color: var(--accent); font-family: 'Space Mono', monospace; font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: left; font-size: 15px; color: var(--text); cursor: pointer; transition: all 0.2s; }
+  .quiz-opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* ESTILOS NUEVOS PARA LA REVISIÓN DEL QUIZ */
+  .quiz-review-container { margin-top: 30px; text-align: left; border-top: 1px solid var(--border); padding-top: 20px; }
+  .review-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .review-q-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; font-family: 'Bricolage Grotesque', sans-serif; }
+  .review-opt-line { padding: 8px 12px; border-radius: 6px; font-size: 14px; margin-bottom: 4px; border: 1px solid transparent; color: var(--text2); }
+  .review-opt-line.user-selected-correct { background: rgba(46, 204, 138, 0.12); border-color: var(--green); color: var(--green); font-weight: 500; }
+  .review-opt-line.user-selected-incorrect { background: rgba(242, 86, 86, 0.12); border-color: var(--red); color: var(--red); font-weight: 500; }
+  .review-opt-line.correct-unselected { color: var(--text); font-weight: 500; text-decoration: underline; }
+  .review-reminder-box { margin-top: 10px; padding: 10px 14px; background: rgba(245, 166, 35, 0.08); border-left: 3px solid var(--amber); border-radius: 0 6px 6px 0; font-size: 13px; color: var(--text); line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="brand-strip">
+    <div class="brand-strip-left">
+      <a href="#" class="brand-link">LABORATORIO COBIAN</a>
+      <span class="sep">/</span>
+      <span>Políticas y Estrategias de Respaldo Lógico</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> <span id="themeText">Modo Claro</span>
+    </button>
+  </div>
+  <div class="header-hero">
+    <div class="header-chip">Ecosistema Educativo de Respaldo</div>
+    <h1>Estrategias de <span class="h-accent">Backup</span> y Recuperación</h1>
+    <p>Domina los tres pilares lógicos del respaldo de archivos en Cobian. Analiza cómo optimizar el espacio en disco, los tiempos de ejecución y la complejidad de una restauración ante desastres.</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('teo')">1. Conceptos y Cadena Temporal</button>
+  <button class="tab" onclick="switchTab('sim')">2. Simulador Cobian Backup</button>
+  <button class="tab" onclick="switchTab('quiz')">3. Autoevaluación</button>
+</div>
+
+<div id="panel-teo" class="panel active">
+  <div class="card">
+    <h2>Estructuras Lógicas de Respaldo</h2>
+    <p>Los programas profesionales como Cobian Backup permiten programar tareas utilizando diferentes lógicas matemáticas y de atributos de archivo para no saturar los discos de almacenamiento de la empresa.</p>
+    
+    <div class="grid-tech">
+      <div class="tech-item" onclick="showTeoInfo('full')">
+        <h4>1. Respaldo Completo (Full)</h4>
+        <p>La base absoluta de todo. Copia el 100% de los datos seleccionados ignorando si cambiaron o no.</p>
+      </div>
+      <div class="tech-item" onclick="showTeoInfo('inc')">
+        <h4>2. Respaldo Incremental</h4>
+        <p>Evolución diaria veloz. Solo copia lo nuevo o modificado desde el último respaldo realizado.</p>
+      </div>
+      <div class="tech-item" onclick="showTeoInfo('diff')">
+        <h4>3. Respaldo Diferencial</h4>
+        <p>El punto medio equilibrado. Copia todo lo alterado desde el último Respaldo Completo.</p>
+      </div>
+    </div>
+    <div id="teo-box" class="info-box">Haz clic sobre una de las estrategias superiores para desplegar su arquitectura detallada, ventajas y desventajas...</div>
+
+    <h3 style="margin-top:25px;">Ejemplo visual de una semana laboral (Lunes a Viernes)</h3>
+    <p>Haz clic en cada día para comprender cómo se comportaría el volumen si realizamos cambios diarios sobre una base inicial de 100 GB.</p>
+    <div class="timeline-layout">
+      <div class="timeline-day" onclick="showDayInfo('lunes')"><div class="day-title">Lunes</div><div class="day-status">Base 100GB</div></div>
+      <div class="timeline-day" onclick="showDayInfo('martes')"><div class="day-title">Martes</div><div class="day-status">+5GB nuevos</div></div>
+      <div class="timeline-day" onclick="showDayInfo('miercoles')"><div class="day-title">Miércoles</div><div class="day-status">+10GB nuevos</div></div>
+      <div class="timeline-day" onclick="showDayInfo('jueves')"><div class="day-title">Jueves</div><div class="day-status">Modificación</div></div>
+      <div class="timeline-day" onclick="showDayInfo('viernes')"><div class="day-title">Viernes</div><div class="day-status">¡FALLO CRÍTICO!</div></div>
+    </div>
+    <div id="day-box" class="info-box">Selecciona un día de la semana para evaluar los datos producidos.</div>
+  </div>
+</div>
+
+<div id="panel-sim" class="panel">
+  <div class="sim-layout">
+    <div>
+      <div class="sim-repo-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="sim-disk-title" id="simTitle" style="font-weight:700;">REPOSITORIO DE RESPALDOS DESTINO</div>
+          <div style="font-size:13px; color:var(--text3)">Estado de Producción: <span id="currentDayLabel" style="color:var(--accent); font-weight:700;">Lunes (Día Inicial)</span></div>
+        </div>
+
+        <div class="sim-stats">
+          <div class="stat-box">
+            <div class="stat-label">Espacio en Origen</div>
+            <div class="stat-val" id="statOrigin">100 GB</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Espacio Usado en Destino</div>
+            <div class="stat-val" id="statDest" style="color:var(--accent2)">0 GB</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Archivos en Destino</div>
+            <div class="stat-val" id="statCount">0 Archivos</div>
+          </div>
+        </div>
+
+        <div style="margin: 10px 0; padding: 12px; background: var(--surface2); border-radius: 6px; font-size:14px; border-left:4px solid var(--accent)">
+          <strong>Datos del Servidor en vivo:</strong> <br><span id="serverStatusText">El servidor se encuentra limpio (Lunes). Debes iniciar con un Respaldo Completo para sentar la base estructural.</span>
+        </div>
+
+        <div id="realtimeFeedback" class="feedback-box"></div>
+
+        <h4 style="font-size:13px; font-family:'Space Mono'; color:var(--text3); text-transform:uppercase; margin-top:20px;">Historial de Tareas Ejecutadas en Destino</h4>
+        <div class="backup-history" id="backupHistory">
+          <div style="color:var(--text3); font-size:14px; font-style:italic;">No se han ejecutado respaldos en esta sesión.</div>
+        </div>
+      </div>
+
+      <div class="validation-box" id="validationBox"></div>
+      <div class="best-practice-card" id="bestPracticeBox"></div>
+    </div>
+
+    <div class="sim-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-title">Paso 1: Programación en Cobian</div>
+        <label class="ctrl-label">Tipo de Respaldo a ejecutar</label>
+        <select class="ctrl-select" id="ctrlType">
+          <option value="FULL">Respaldo Completo (Full)</option>
+          <option value="INC">Respaldo Incremental</option>
+          <option value="DIFF">Respaldo Diferencial</option>
+        </select>
+      </div>
+
+      <button id="btnExecuteBackup" class="btn-add" onclick="executeBackup()">⚡ Ejecutar Respaldo Ahora</button>
+      
+      <button id="btnNextDayGuide" class="btn-next-day" onclick="advanceDay()">👉 Pasar al siguiente día 📅</button>
+      
+      <hr style="border: 0; border-top:1px solid var(--border); margin: 5px 0;">
+
+      <button class="btn-check" style="background-color: var(--surface3); color: var(--accent); border:1px solid var(--border);" onclick="toggleLearnBox()">💡 Guía Rápida de Aprendizaje (Cobian)</button>
+
+      <hr style="border: 0; border-top:1px solid var(--border); margin: 5px 0;">
+
+      <button class="btn-check" onclick="simulateDisasterRecovery()">📋 Simular Restauración ante Desastre</button>
+      <button class="btn-reset" onclick="resetSim()">Formatear Repositorio y Reiniciar</button>
+
+      <div id="learnBoxDiv" class="learn-box-div">
+        <strong style="font-size:14px; display:block; margin-bottom:8px;">🎓 LÓGICA DE ARCHIVADO EN COBIAN</strong>
+        <strong>1. Atributo de Archivo:</strong> Windows marca cada archivo nuevo o modificado con una "bandera" de control lógica.<br><br>
+        <strong>2. ¿Cómo actúa el INCREMENTAL?:</strong> Copia el archivo modificado y limpia su bandera. Así no lo vuelve a respaldar mañana. Ahorra espacio, pero genera dependencias consecutivas en cadena.<br><br>
+        <strong>3. ¿Cómo actúa el DIFERENCIAL?:</strong> Copia el archivo modificado pero NO limpia su bandera. Por ello, acumula los datos día tras día con respecto al último Completo. Pesa más, pero la restauración se hace con solo 2 archivos.<br><br>
+        <strong>Consejo:</strong> Alterna las configuraciones en el simulador para ver cómo impactan al almacenamiento destino.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="panel-quiz" class="panel">
+  <div class="quiz-shell">
+    <div class="quiz-header">
+      <div style="font-size:14px; font-weight:700; color:var(--text3); text-transform:uppercase;">Evaluación de Respaldos de Servidores</div>
+      <div id="quizCounter" style="font-size:14px; color:var(--accent); font-family:'Space Mono', monospace;">Pregunta 1 de 6</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="quizBar"></div>
+    </div>
+    <div id="quizBody"></div>
+  </div>
+</div>
+
+<script>
+// ===== ESTADO GLOBAL DEL SIMULADOR =====
+let currentDayIndex = 0; 
+const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+let backupHistoryList = [];
+let lastFullIndex = -1;
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute('data-theme') === 'dark';
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('themeText').textContent = isDark ? 'Modo Oscuro' : 'Modo Claro';
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(`panel-${tabId}`).classList.add('active');
+}
+
+// ===== TEORÍA INTERACTIVA =====
+function showTeoInfo(type) {
+  const box = document.getElementById('teo-box');
+  if (type === 'full') {
+    box.innerHTML = `<strong>Respaldo Completo (Full):</strong> Copia absolutamente todos los archivos seleccionados, sin importar si cambiaron o no desde la última vez.<br><br>
+    <span style='color:var(--green)'><strong>Ventajas:</strong></span> Es el más seguro y fácil de restaurar. Si necesitas recuperar tus datos, solo vas a ese respaldo y listo, tienes todo en un solo lugar.<br>
+    <span style='color:var(--red)'><strong>Desventajas:</strong></span> Consume muchísimo espacio en disco y tarda bastante tiempo en completarse si tienes muchos gigabytes de información.`;
+  }
+  if (type === 'inc') {
+    box.innerHTML = `<strong>Respaldo Incremental:</strong> Solo copia los archivos que han sido creados o modificados desde el último respaldo realizado (sea Completo o Incremental).<br><br>
+    <span style='color:var(--green)'><strong>Ventajas:</strong></span> Es extremadamente rápido de hacer y ocupa muy poco espacio en disco, porque solo guarda los cambios diarios.<br>
+    <span style='color:var(--red)'><strong>Desventajas:</strong></span> Restaurarlo es un rompecabezas. Si tu sistema falla un viernes, necesitas obligatoriamente: el Completo del lunes + incremental del martes + miércoles + jueves. Si un eslabón intermedio se daña, se pierde la cadena completa.`;
+  }
+  if (type === 'diff') {
+    box.innerHTML = `<strong>Respaldo Diferencial:</strong> Solo copia los archivos que han cambiado desde el último Respaldo Completo realizado, ignorando si ayer se hizo otro diferencial.<br><br>
+    <span style='color:var(--green)'><strong>Ventajas:</strong></span> Es el punto medio ideal. Ocupa menos espacio que un completo y es mucho más rápido de restaurar que un incremental (solo necesitas dos elementos: el Completo y el último Diferencial).<br>
+    <span style='color:var(--red)'><strong>Desventajas:</strong></span> A medida que pasan los días desde el último completo, el archivo diferencial se vuelve más pesado porque acumula todos los cambios agregados de la semana.`;
+  }
+}
+
+function showDayInfo(day) {
+  const box = document.getElementById('day-box');
+  if (day === 'lunes') box.innerHTML = "<strong>Lunes (Inicio):</strong> Los servidores de la empresa inician producción de la semana con un núcleo estable de 100 GB de datos fijos.";
+  if (day === 'martes') box.innerHTML = "<strong>Martes:</strong> Los desarrolladores agregan código y documentos nuevos que pesan un total de <strong>5 GB</strong>.";
+  if (day === 'miercoles') box.innerHTML = "<strong>Miércoles:</strong> El departamento de diseño sube renders por un valor extra de <strong>10 GB</strong> respecto al martes.";
+  if (day === 'jueves') box.innerHTML = "<strong>Jueves:</strong> Se modifican bases de datos contables existentes sumando <strong>15 GB</strong> de alteración respecto a la base del lunes.";
+  if (day === 'viernes') box.innerHTML = "<strong>Viernes:</strong> Un ataque de Ransomware o falla física daña los discos locales. <br><strong>Urgencia:</strong> Se requiere desplegar la estrategia de restauración inmediatamente.";
+}
+
+function toggleLearnBox() {
+  const box = document.getElementById('learnBoxDiv');
+  box.classList.toggle('visible');
+}
+
+// ===== LÓGICA DEL SIMULADOR =====
+function updateSimUI() {
+  document.getElementById('currentDayLabel').textContent = `${days[currentDayIndex]} (Día ${currentDayIndex + 1}/5)`;
+  
+  let currentOriginSize = 100;
+  if(currentDayIndex === 1) currentOriginSize = 105;
+  if(currentDayIndex === 2) currentOriginSize = 115;
+  if(currentDayIndex === 3) currentOriginSize = 130;
+  if(currentDayIndex === 4) currentOriginSize = 155;
+  
+  document.getElementById('statOrigin').textContent = currentOriginSize + ' GB';
+
+  const statusBox = document.getElementById('serverStatusText');
+  if(currentDayIndex === 0) statusBox.textContent = "Lunes: El servidor está en su estado nativo de 100 GB.";
+  if(currentDayIndex === 1) statusBox.textContent = "Martes: Se han agregado 5 GB de archivos nuevos en el servidor.";
+  if(currentDayIndex === 2) statusBox.textContent = "Miércoles: Se sumaron otros 10 GB de archivos multimedia al disco de origen.";
+  if(currentDayIndex === 3) statusBox.textContent = "Jueves: Se modificaron las bases de datos contables (+15 GB de cambios directos).";
+  
+  if(currentDayIndex === 4) {
+    statusBox.innerHTML = `<span style="color:var(--red); font-weight:bold;">Un ataque de Ransomware o falla física daña los discos locales.<br>Urgencia: Se requiere desplegar la estrategia de restauración inmediatamente. Realiza la restauración</span>`;
+  }
+
+  let totalDest = 0;
+  backupHistoryList.forEach(b => totalDest += b.size);
+  document.getElementById('statDest').textContent = totalDest.toFixed(1) + ' GB';
+  document.getElementById('statCount').textContent = backupHistoryList.length + ' Bloques';
+
+  const historyContainer = document.getElementById('backupHistory');
+  if (backupHistoryList.length === 0) {
+    historyContainer.innerHTML = `<div style="color:var(--text3); font-size:14px; font-style:italic;">No se han ejecutado respaldos en esta sesión.</div>`;
+    return;
+  }
+
+  historyContainer.innerHTML = '';
+  backupHistoryList.forEach(b => {
+    let item = document.createElement('div');
+    item.className = 'history-item';
+    let badgeClass = b.type === 'Completo' ? 'bg-full' : (b.type === 'Incremental' ? 'bg-inc' : 'bg-diff');
+    
+    let correctionMarkup = b.wasCorrected ? `<span class="history-corrected">(Autocorregido por Cobian)</span>` : "";
+
+    item.innerHTML = `
+      <span class="badge-type ${badgeClass}">${b.type}</span>
+      <div style="flex:1; font-size:14px;">Ejecutado el: <strong>${b.day}</strong> ${correctionMarkup}</div>
+      <div style="font-family:'Space Mono'; font-weight:700; font-size:14px; color:var(--accent);">${b.size} GB</div>
+    `;
+    historyContainer.appendChild(item);
+  });
+}
+
+function advanceDay() {
+  if (currentDayIndex >= 4) {
+    alert("Has llegado al viernes (estado de desastre). Procede a ejecutar la restauración final.");
+    return;
+  }
+  currentDayIndex++;
+  
+  document.getElementById('realtimeFeedback').classList.remove('visible');
+  document.getElementById('btnNextDayGuide').classList.remove('visible');
+  document.getElementById('btnExecuteBackup').disabled = false;
+  
+  updateSimUI();
+}
+
+function executeBackup() {
+  const type = document.getElementById('ctrlType').value;
+  let dayName = days[currentDayIndex];
+  let sizeCalculated = 0;
+  let textType = "";
+  let wasCorrected = false;
+  
+  let isBestSelection = false;
+  let feedbackText = "";
+
+  if (type === 'FULL') {
+    textType = "Completo";
+    if (currentDayIndex === 0) sizeCalculated = 100;
+    if (currentDayIndex === 1) sizeCalculated = 105;
+    if (currentDayIndex === 2) sizeCalculated = 115;
+    if (currentDayIndex === 3) sizeCalculated = 130;
+    if (currentDayIndex === 4) sizeCalculated = 155;
+    lastFullIndex = backupHistoryList.length; 
+
+    if (currentDayIndex === 0) {
+      isBestSelection = true;
+      feedbackText = "<strong>¡Excelente elección!</strong> El Lunes es obligatorio iniciar con un backup Completo. Sirve para construir los cimientos del repositorio y almacenar la base de la empresa (100 GB).";
+    } else {
+      isBestSelection = false;
+      feedbackText = "<strong>No es la opción óptima:</strong> Volver a realizar un backup Completo un día de semana consume demasiado almacenamiento secundario (" + sizeCalculated + " GB) y satura el ancho de banda inútilmente.";
+    }
+  } 
+  else if (type === 'INC') {
+    textType = "Incremental";
+    if (backupHistoryList.length === 0) {
+      textType = "Completo";
+      sizeCalculated = 100;
+      lastFullIndex = 0;
+      wasCorrected = true; 
+      isBestSelection = true;
+      feedbackText = "<strong>Autocorregido por Cobian:</strong> Al ser el primer respaldo de la cadena, el sistema lo elevó obligatoriamente a Completo (100 GB) para crear una base de datos segura.";
+    } else {
+      if (currentDayIndex === 1) sizeCalculated = 5;
+      if (currentDayIndex === 2) sizeCalculated = 10;
+      if (currentDayIndex === 3) sizeCalculated = 15;
+      if (currentDayIndex === 4) sizeCalculated = 25;
+      
+      isBestSelection = true;
+      feedbackText = "<strong>¡Buena estrategia de espacio diario!</strong> El respaldo Incremental copió exclusivamente lo generado hoy (" + sizeCalculated + " GB). Es veloz, aunque recuerda que añade eslabones a la cadena de recuperación.";
+    }
+  } 
+  else if (type === 'DIFF') {
+    textType = "Diferencial";
+    if (lastFullIndex === -1) {
+      textType = "Completo";
+      sizeCalculated = 100;
+      lastFullIndex = 0;
+      wasCorrected = true;
+      isBestSelection = true;
+      feedbackText = "<strong>Autocorregido por Cobian:</strong> No existía un respaldo Completo previo. Se forzó un Full base de 100 GB para no romper la integridad estructural.";
+    } else {
+      if (currentDayIndex === 0) sizeCalculated = 0;
+      if (currentDayIndex === 1) sizeCalculated = 5;
+      if (currentDayIndex === 2) sizeCalculated = 15; 
+      if (currentDayIndex === 3) sizeCalculated = 30; 
+      if (currentDayIndex === 4) sizeCalculated = 55; 
+
+      isBestSelection = true;
+      feedbackText = "<strong>¡Excelente estrategia balanceada!</strong> El Diferencial copió todo lo acumulado desde el lunes (" + sizeCalculated + " GB). Ocupa más espacio que un incremental, pero garantizará que restaures todo usando solo dos archivos.";
+    }
+  }
+
+  backupHistoryList.push({
+    type: textType,
+    day: dayName,
+    dayIdx: currentDayIndex,
+    size: sizeCalculated,
+    wasCorrected: wasCorrected
+  });
+
+  const fbBox = document.getElementById('realtimeFeedback');
+  fbBox.className = `feedback-box visible ${isBestSelection ? 'fb-good' : 'fb-bad'}`;
+  fbBox.innerHTML = (isBestSelection ? "🟢 " : "🟡 ") + feedbackText;
+
+  document.getElementById('btnExecuteBackup').disabled = true;
+  if(currentDayIndex < 4) {
+    document.getElementById('btnNextDayGuide').classList.add('visible');
+  } else {
+    fbBox.innerHTML += "<br><br><strong>¡Cierre de ciclo!</strong> Haz clic abajo en 'Simular Restauración ante Desastre' para salvar los datos del ransomware.";
+  }
+
+  updateSimUI();
+}
+
+function simulateDisasterRecovery() {
+  const box = document.getElementById('validationBox');
+  box.className = "validation-box visible";
+  box.innerHTML = "";
+
+  if (backupHistoryList.length === 0) {
+    box.innerHTML = `<div class="validation-title" style="color:var(--red)">❌ Error Total de Recuperación</div>
+    <p style="font-size:13.5px;">No has guardado ningún archivo en el repositorio. La empresa ha perdido el 100% de la información contable y operacional debido al Ransomware.</p>`;
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  let hasFull = backupHistoryList.some(b => b.type === "Completo");
+  if (!hasFull) {
+    box.innerHTML = `<div class="validation-title" style="color:var(--red)">❌ Cadena Rota e Inutilizable</div>
+    <p style="font-size:13.5px;">Careces de un <strong>Respaldo Completo</strong> inicial. Es imposible reconstruir los servidores desde cero sin la estructura base.</p>`;
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  let totalBackups = backupHistoryList.length;
+  let lastBackup = backupHistoryList[totalBackups - 1];
+
+  let title = document.createElement('div');
+  title.className = "validation-title";
+  title.style.color = "var(--green)";
+  title.textContent = `🎉 Reconstrucción Exitosa del Sistema`;
+  box.appendChild(title);
+
+  let explanation = document.createElement('p');
+  explanation.style.fontSize = "13.5px";
+  explanation.style.marginTop = "6px";
+
+  if (lastBackup.type === "Completo") {
+    explanation.innerHTML = `<strong>Resultado de tu simulación:</strong> Al utilizar un esquema final <strong>Completo</strong>, para levantar el servidor tras el ataque recuperaste un solo bloque masivo. Es muy fácil operativamente, pero gastaste excesivo almacenamiento redundante en tus discos durante la semana.`;
+  } 
+  else if (lastBackup.type === "Diferencial") {
+    explanation.innerHTML = `<strong>Resultado de tu simulación:</strong> El software requiere únicamente <u>2 piezas lógicas</u>: El primer Completo (Lunes) y el bloque Diferencial del día de protección. La restauración es óptima y veloz.`;
+  } 
+  else if (lastBackup.type === "Incremental") {
+    explanation.innerHTML = `<strong>Resultado de tu simulación:</strong> Has quedado expuesto a un rompecabezas secuencial. Para restaurar necesitas el Completo inicial + cada uno de los incrementales intermedios. Si un solo archivo de la cadena diaria se corrompe, pierdes todo el trabajo.`;
+  }
+  box.appendChild(explanation);
+
+  const bpBox = document.getElementById('bestPracticeBox');
+  bpBox.className = "best-practice-card visible";
+  bpBox.innerHTML = `
+    <h3 style="margin-top:0; color:var(--accent);">🛡️ Arquitectura Ideal de Protection (Buenas Prácticas)</h3>
+    <p style="font-size:14px; color:var(--text);">Para estar máximamente protegidos optimizando recursos, los ingenieros de sistemas configuran Cobian Backup de la siguiente forma:</p>
+    <ul style="font-size:13.5px; padding-left:20px; color:var(--text2); display:flex; flex-direction:column; gap:6px;">
+      <li><strong>Lunes: Respaldo Completo (Full).</strong> Es obligatorio e inamovible para asentar la base estructural del servidor de archivos.</li>
+      <li><strong>Martes a Viernes: Respaldos Diferenciales diarios.</strong> ¿Por qué? Porque si el viernes ocurre el ransomware, solo necesitas enlazar 2 archivos (el del lunes y el del jueves/viernes). No sufres el peligro de rotura de cadena del incremental, y no derrochas los cientos de GB redundantes que te consumiría hacer un Full diario.</li>
+    </ul>
+  `;
+
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetSim() {
+  currentDayIndex = 0;
+  backupHistoryList = [];
+  lastFullIndex = -1;
+  document.getElementById('validationBox').classList.remove('visible');
+  document.getElementById('realtimeFeedback').classList.remove('visible');
+  document.getElementById('btnNextDayGuide').classList.remove('visible');
+  document.getElementById('bestPracticeBox').classList.remove('visible');
+  document.getElementById('learnBoxDiv').classList.remove('visible');
+  document.getElementById('btnExecuteBackup').disabled = false;
+  updateSimUI();
+}
+
+// ===== MOTOR DEL EVALUADOR (QUIZ) =====
+const quizQuestions = [
+  { q: "Si configuras Cobian para respaldar el viernes y necesitas rapidez absoluta de restauración usando solo el archivo Full base del lunes y el archivo del día actual, ¿qué estrategia debes elegir?", a: "Respaldo Incremental", b: "Respaldo Diferencial", c: "Respaldo Estático", correct: "b", reason: "El respaldo Diferencial almacena los cambios acumulados desde el último Completo. Por tanto, para restaurar solo necesitas la base (Full) y el bloque Diferencial del día deseado." },
+  { q: "¿Qué sucede en Cobian Backup si ejecutas una tarea programada como Incremental pero es la primera vez que corre la tarea en un disco limpio?", a: "Da error del sistema por falta de archivos", b: "Ignora el proceso y no guarda datos", c: "Se fuerza automáticamente un Respaldo Completo como base", correct: "c", reason: "Los respaldos incrementales y diferenciales son de carácter relativo. Si no existe una base (Full) previa sobre la cual calcular los cambios, Cobian forzará un Full inicial por seguridad." },
+  { q: "¿Cuál es la principal desventaja de realizar un Respaldo Completo (Full) todas las noches en un servidor de archivos multimedia de 15 Terabytes?", a: "Es extremadamente difícil de restaurar", b: "Consume excesivo espacio físico en disco y degrada la red por horas", c: "Suele romper la consistencia del Kernel", correct: "b", reason: "Un backup completo transfiere el 100% de los datos cada vez. En volúmenes masivos de datos (como 15 TB), esto colapsa el almacenamiento destino en pocos días y satura la red de la empresa." },
+  { q: "En una estrategia Incremental pura de Lunes a Viernes, si el archivo generado el día Miércoles se daña físicamente por un apagón, ¿qué datos se pueden recuperar el Viernes?", a: "Se puede recuperar todo sin problemas", b: "Solo lo del Lunes y Martes; la cadena se rompe desde el miércoles en adelante", c: "No se puede recuperar absolutamente nada, ni siquiera la base del lunes", correct: "b", reason: "La estrategia Incremental genera una dependencia en cadena secuencial. Si el eslabón del miércoles se corrompe o pierde, es imposible concatenar los incrementales posteriores (jueves y viernes)." },
+  { q: "A medida que avanzan los días de la semana alejándose del último Respaldo Completo, ¿cómo se comporta el tamaño de un archivo de Respaldo Diferencial?", a: "Se vuelve más y más pesado porque acumula todos los cambios desde el lunes", b: "Se mantiene exactamente igual de liviano que un incremental", c: "Reduce su peso de manera exponencial", correct: "a", reason: "El Diferencial NO limpia las banderas de modificación de los archivos. Por ende, los cambios del martes se vuelven a copiar el miércoles, el jueves y el viernes, haciendo el archivo cada día más pesado." },
+  { q: "Tu jefe te pide diseñar una política de backups optimizada para ahorrar almacenamiento secundario diario, pero minimizando el riesgo de depender de un romabezas de 7 archivos para restaurar. ¿Cuál es el diseño óptimo?", a: "Full los domingos e Incrementales los días de semana", b: "Full los domingos y Diferenciales de Lunes a Sábado", c: "Ejecutar únicamente respaldos Completos cada 12 horas", correct: "b", reason: "Esta combinación es la mejor práctica estándar: El Full semanal asienta la base (ahorrando el espacio de hacer Fulls diarios) y los Diferenciales diarios garantizan restaurar con solo 2 archivos, evitando el riesgo de la cadena incremental." }
+];
+
+let currentQuestion = 0;
+let userAnswers = [];
+
+function renderQuestion() {
+  const container = document.getElementById('quizBody');
+  const counter = document.getElementById('quizCounter');
+  const bar = document.getElementById('quizBar');
+
+  if (currentQuestion >= quizQuestions.length) {
+    renderQuizResults();
+    return;
+  }
+
+  counter.textContent = `Pregunta ${currentQuestion + 1} de ${quizQuestions.length}`;
+  bar.style.width = ((currentQuestion + 1) / quizQuestions.length) * 100 + "%";
+
+  let qData = quizQuestions[currentQuestion];
+  
+  container.innerHTML = `
+    <div class="quiz-q">
+      <span class="q-num">Q${currentQuestion + 1}</span>
+      <span>${qData.q}</span>
+    </div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="processQuizSelection('a')">A) ${qData.a}</button>
+      <button class="quiz-opt" onclick="processQuizSelection('b')">B) ${qData.b}</button>
+      <button class="quiz-opt" onclick="processQuizSelection('c')">C) ${qData.c}</button>
+    </div>
+  `;
+}
+
+function processQuizSelection(letter) {
+  userAnswers.push(letter);
+  currentQuestion++;
+  renderQuestion();
+}
+
+function renderQuizResults() {
+  const container = document.getElementById('quizBody');
+  document.getElementById('quizCounter').textContent = "Evaluación Concluida";
+  
+  let correctHits = 0;
+  quizQuestions.forEach((q, i) => {
+    if (userAnswers[i] === q.correct) correctHits++;
+  });
+
+  let pct = Math.round((correctHits / quizQuestions.length) * 100);
+  let pass = correctHits >= Math.ceil(quizQuestions.length / 2);
+
+  // Parte Estática Base Solicitada
+  let htmlOutput = `
+    <div style="text-align:center; padding: 25px 0;">
+      <h2 style="font-size:32px; margin-bottom: 10px; color:${pass ? 'var(--green)' : 'var(--amber)'}">
+        ${pass ? '¡Evaluación Completada!' : 'Sigue Practicando'}
+      </h2>
+      <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: inline-block; min-width: 280px; margin-bottom: 20px;">
+        <div style="font-size: 14px; color: var(--text3); text-transform: uppercase; font-family: 'Space Mono', monospace;">Puntaje de Respaldos</div>
+        <div style="font-size: 48px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; color: #fff; margin: 5px 0;">
+          ${correctHits} <span style="font-size: 24px; color: var(--text3); font-weight: 400;">/ ${quizQuestions.length}</span>
+        </div>
+        <div style="font-size: 16px; font-weight: 600; color: ${pass ? 'var(--green)' : 'var(--red)'}">${pct}% Correcto</div>
+      </div>
+      <p style="font-size:15px; color: var(--text2); max-width: 500px; margin: 0 auto 20px;">
+        ${pass ? 'Felicidades. Has asimilado la lógica de archivado (Full, Incremental y Diferencial) empleada en infraestructuras de servidores reales.' : 'Te sugerimos repasar la lógica de dependencias de archivos intermedios antes de volver a realizar el test.'}
+      </p>
+  `;
+
+  // MÓDULO ADICIONAL: Despliegue de Preguntas, Respuestas y Recordatorios de Fallos
+  htmlOutput += `<div class="quiz-review-container">`;
+  htmlOutput += `<h3 style="color: var(--accent); margin-bottom: 15px;">📋 Revisión Detallada del Examen</h3>`;
+
+  quizQuestions.forEach((q, i) => {
+    let userAns = userAnswers[i];
+    let isCorrect = userAns === q.correct;
+
+    htmlOutput += `
+      <div class="review-item">
+        <div class="review-q-title">Pregunta ${i + 1}: ${q.q}</div>
+    `;
+
+    // Opción A
+    let classA = "";
+    if (userAns === 'a') classA = isCorrect ? "user-selected-correct" : "user-selected-incorrect";
+    if (!isCorrect && q.correct === 'a') classA = "correct-unselected";
+    htmlOutput += `<div class="review-opt-line ${classA}">A) ${q.a} ${userAns === 'a' ? (isCorrect ? ' 🟢 (Tu elección)' : ' 🔴 (Tu elección)') : ''}</div>`;
+
+    // Opción B
+    let classB = "";
+    if (userAns === 'b') classB = isCorrect ? "user-selected-correct" : "user-selected-incorrect";
+    if (!isCorrect && q.correct === 'b') classB = "correct-unselected";
+    htmlOutput += `<div class="review-opt-line ${classB}">B) ${q.b} ${userAns === 'b' ? (isCorrect ? ' 🟢 (Tu elección)' : ' 🔴 (Tu elección)') : ''}</div>`;
+
+    // Opción C
+    let classC = "";
+    if (userAns === 'c') classC = isCorrect ? "user-selected-correct" : "user-selected-incorrect";
+    if (!isCorrect && q.correct === 'c') classC = "correct-unselected";
+    htmlOutput += `<div class="review-opt-line ${classC}">C) ${q.c} ${userAns === 'c' ? (isCorrect ? ' 🟢 (Tu elección)' : ' 🔴 (Tu elección)') : ''}</div>`;
+
+    // Caja de recordatorio si el alumno contestó de forma incorrecta
+    if (!isCorrect) {
+      let correctLetterText = q.correct.toUpperCase();
+      let correctOptionText = q[q.correct];
+      htmlOutput += `
+        <div class="review-reminder-box">
+          💡 <strong>Respuesta Correcta:</strong> Opción ${correctLetterText}) ${correctOptionText}.<br>
+          <strong>Recordatorio pedagógico:</strong> ${q.reason}
+        </div>
+      `;
+    }
+
+    htmlOutput += `</div>`; // Cierre de review-item
+  });
+
+  htmlOutput += `</div>`; // Cierre de quiz-review-container
+
+  // Botón para reiniciar al final del todo
+  htmlOutput += `
+      <button class="btn-add" style="width:240px; margin: 25px auto 0;" onclick="restartQuiz()">🔄 Volver a Empezar Test</button>
+    </div>
+  `;
+
+  container.innerHTML = htmlOutput;
+}
+
+function restartQuiz() {
+  currentQuestion = 0; userAnswers = []; renderQuestion();
+}
+
+window.onload = function() {
+  updateSimUI();
+  renderQuestion();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Particiones y Sistemas de Archivos · Laboratorio Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&family=Bricolage+Grotesque:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ===== THEMING (light / dark) ===== */
+  :root[data-theme="dark"] {
+    --bg: #0d0f14;
+    --bg2: #0a0c12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #252a3a;
+    --border: #2d3350;
+    --border-soft: rgba(45,51,80,0.5);
+    --accent: #00e5ff;
+    --accent-soft: rgba(0,229,255,0.12);
+    --accent2: #7c5cfc;
+    --green: #2ecc8a;
+    --amber: #f5a623;
+    --red: #f25656;
+    --teal: #1ec8c8;
+    --text: #e8ecf4;
+    --text2: #8b93a8;
+    --text3: #555e78;
+    --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --header-gradient: linear-gradient(135deg, #0a0c12 0%, #131a2e 50%, #0a0c12 100%);
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fb;
+    --bg2: #ffffff;
+    --surface: #ffffff;
+    --surface2: #f0f3f9;
+    --surface3: #e4e9f2;
+    --border: #d4dae8;
+    --border-soft: rgba(180,190,210,0.5);
+    --accent: #0099bb;
+    --accent-soft: rgba(0,153,187,0.10);
+    --accent2: #6242e0;
+    --green: #1e9e6b;
+    --amber: #d18a0c;
+    --red: #d63838;
+    --teal: #138989;
+    --text: #1a1f33;
+    --text2: #50587a;
+    --text3: #8893ad;
+    --shadow: 0 4px 20px rgba(50,70,110,0.10);
+    --header-gradient: linear-gradient(135deg, #1a1f33 0%, #2a3050 50%, #1a1f33 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 80px;
+    transition: background 0.3s, color 0.3s;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* ===== HEADER ===== */
+  header.brand {
+    background: var(--header-gradient);
+    border-bottom: 1px solid rgba(0,229,255,0.15);
+    position: relative;
+    overflow: hidden;
+  }
+  .brand-strip {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    position: relative; z-index: 2;
+  }
+  .brand-strip-left {
+    display: flex; align-items: center; gap: 15px;
+    font-size: 14px; color: rgba(255,255,255,0.65);
+  }
+  .brand-link {
+    color: var(--accent) !important;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    text-decoration: none;
+  }
+  .theme-toggle {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85); border-radius: 24px; padding: 6px 14px;
+    font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .header-hero { padding: 40px 40px 36px; position: relative; z-index: 2; }
+  .header-chip {
+    display: inline-flex; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px;
+  }
+  header.brand h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  header.brand h1 .h-accent { color: var(--accent); }
+  header.brand p { font-size: 16px; color: rgba(255,255,255,0.65); max-width: 800px; }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex; gap: 6px; padding: 0 40px; border-bottom: 1px solid var(--border);
+    background: var(--bg); position: sticky; top: 0; z-index: 10;
+  }
+  .tab { padding: 16px 20px; font-size: 15px; font-weight: 600; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ===== PANELS & CARDS ===== */
+  .panel { display: none; padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
+  .panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: #fff; margin-bottom: 12px; }
+  h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; color: var(--accent); margin: 18px 0 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  p { color: var(--text2); margin-bottom: 16px; font-size: 15px; }
+
+  /* ===== DISCOS INTERACTIVOS TEORÍA ===== */
+  .disk-layout { margin: 16px 0 24px; }
+  .disk-bar { height: 54px; border-radius: 8px; display: flex; width: 100%; border: 1px solid var(--border); background: var(--surface2); overflow: hidden; }
+  .disk-partition { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; border-right: 1px solid rgba(0,0,0,0.2); transition: filter 0.2s; }
+  .disk-partition:hover { filter: brightness(1.2); }
+  
+  .p-win-boot { background-color: #1e3a8a; } .p-win-system { background-color: #2563eb; }
+  .p-win-data { background-color: #0d9488; } .p-win-recovery { background-color: #4338ca; }
+  .p-lin-boot { background-color: #b45309; } .p-lin-root { background-color: #991b1b; }
+  .p-lin-home { background-color: #065f46; } .p-lin-swap { background-color: #374151; }
+  .p-mac-sys { background-color: #a78bfa; color: #0b0f19; } .p-mac-data { background-color: #4c1d95; }
+  .p-mac-rec { background-color: #6d28d9; }
+
+  .info-box { background: var(--surface2); border: 1px solid var(--border); padding: 14px 18px; border-radius: 8px; margin-top: 10px; font-size: 14px; min-height: 54px; color: var(--text); }
+  
+  .grid-tech { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px; }
+  .tech-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: border-color 0.2s; }
+  .tech-item:hover { border-color: var(--accent); }
+  .tech-item h4 { font-family: 'Space Mono', monospace; font-size: 14px; color: #fff; margin-bottom: 6px; }
+
+  /* ===== SIMULADOR LAYOUT ===== */
+  .sim-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+  @media (max-width: 1100px) { .sim-layout { grid-template-columns: 1fr; } }
+  
+  .sim-disk-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); }
+  .sim-disk-bar { height: 64px; border-radius: 10px; display: flex; width: 100%; border: 1px solid var(--border); background: var(--surface2); overflow: hidden; margin-bottom: 16px; }
+  .sim-seg { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 12px; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.2); }
+  .sim-free { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text3); font-family: 'Space Mono', monospace; width: 100%; }
+  
+  .sim-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .stat-label { font-size: 12px; color: var(--text3); }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; color: var(--text); }
+  
+  .part-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .part-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .part-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .part-name { font-weight: 700; flex: 1; font-size: 14px; }
+  .part-meta { color: var(--text3); font-family: 'Space Mono', monospace; font-size: 13px; }
+  .part-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; }
+  .part-del:hover { color: var(--red); }
+
+  .sim-controls { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+  .ctrl-title { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label { font-size: 13px; color: var(--text2); }
+  .ctrl-select, .ctrl-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; width: 100%; outline: none; font-size: 14px; }
+  
+  .btn-add { background: var(--accent); color: #001218; border: none; border-radius: 8px; padding: 12px 0; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .btn-check { background: var(--accent2); color: #fff; border: none; border-radius: 8px; padding: 12px 0; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .btn-reset { background: none; color: var(--text3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 0; font-size: 13px; cursor: pointer; }
+  .sim-message { background: rgba(242,86,86,0.12); border: 1px solid rgba(242,86,86,0.3); border-radius: 8px; padding: 10px; font-size: 13px; color: var(--red); display: none; }
+  .sim-message.visible { display: block; }
+
+  /* CAJA DE VALIDACIÓN */
+  .validation-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
+  .validation-box.visible { display: block; }
+  .validation-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .validation-item { font-size: 13.5px; margin-bottom: 6px; display: flex; gap: 6px; }
+
+  /* ===== QUIZ ===== */
+  .quiz-shell { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); max-width: 800px; margin: 0 auto; }
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .progress-bar-wrap { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%); width: 0%; transition: width 0.3s; }
+  .quiz-q { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; gap: 10px; font-family: 'Bricolage Grotesque', sans-serif; }
+  .q-num { background: var(--accent-soft); color: var(--accent); font-family: 'Space Mono', monospace; font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: left; font-size: 15px; color: var(--text); cursor: pointer; transition: all 0.2s; }
+  .quiz-opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .preset-link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="brand-strip">
+    <div class="brand-strip-left">
+      <a href="#" class="brand-link">LABORATORIO ARQUITECTURA</a>
+      <span class="sep">/</span>
+      <span>Sistemas de Almacenamiento Lógico</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> <span id="themeText">Modo Claro</span>
+    </button>
+  </div>
+  <div class="header-hero">
+    <div class="header-chip">Ecosistema Educativo Completo</div>
+    <h1>Estructuras de <span class="h-accent">Discos</span> y Particionados</h1>
+    <p>Explora la teoría de bajo nivel, simula particiones con nomenclaturas reales de Linux/Windows y pon a prueba tus conocimientos en infraestructura.</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('teo')">1. Conceptos y Estructuras</button>
+  <button class="tab" onclick="switchTab('sim')">2. Simulador Práctico</button>
+  <button class="tab" onclick="switchTab('quiz')">3. Autoevaluación</button>
+</div>
+
+<div id="panel-teo" class="panel active">
+  <div class="card">
+    <h2>Estructuras del Almacenamiento en Sistemas Operativos</h2>
+    <p>Una partición es una delimitación lógica sobre un disco duro físico. Cada sistema operativo gestiona estas divisiones y requiere estructuras específicas para organizar los archivos e inicializar el Kernel.</p>
+    
+    <h3>Caso 1: Distribución típica en un Sistema Windows</h3>
+    <div class="disk-layout">
+      <div class="disk-bar">
+        <div class="disk-partition p-win-boot" style="width: 12%;" onclick="showTeoInfo('win','boot')">Reservado (EFI)</div>
+        <div class="disk-partition p-win-system" style="width: 53%;" onclick="showTeoInfo('win','sys')">Unidad C: (NTFS)</div>
+        <div class="disk-partition p-win-data" style="width: 25%;" onclick="showTeoInfo('win','data')">Unidad D: (Datos)</div>
+        <div class="disk-partition p-win-recovery" style="width: 10%;" onclick="showTeoInfo('win','rec')">Recovery</div>
+      </div>
+      <div id="win-teo-box" class="info-box">Haz clic sobre una partición de Windows para ver sus especificaciones lógicas...</div>
+    </div>
+
+    <h3>Caso 2: Distribución nativa de un Sistema Linux</h3>
+    <div class="disk-layout">
+      <div class="disk-bar">
+        <div class="disk-partition p-lin-boot" style="width: 10%;" onclick="showTeoInfo('lin','boot')">/boot</div>
+        <div class="disk-partition p-lin-root" style="width: 40%;" onclick="showTeoInfo('lin','root')">/ (raíz)</div>
+        <div class="disk-partition p-lin-home" style="width: 40%;" onclick="showTeoInfo('lin','home')">/home</div>
+        <div class="disk-partition p-lin-swap" style="width: 10%;" onclick="showTeoInfo('lin','swap')">[SWAP]</div>
+      </div>
+      <div id="lin-teo-box" class="info-box">Haz clic sobre un punto de montaje de Linux para analizar su función...</div>
+    </div>
+
+    <h3>Caso 3: Distribución moderna APFS en Apple macOS</h3>
+    <div class="disk-layout">
+      <div class="disk-bar">
+        <div class="disk-partition p-win-boot" style="width: 10%;" onclick="showTeoInfo('mac','efi')">EFI Boot</div>
+        <div class="disk-partition p-mac-sys" style="width: 35%;" onclick="showTeoInfo('mac','sys')">Macintosh HD (System )</div>
+        <div class="disk-partition p-mac-data" style="width: 45%;" onclick="showTeoInfo('mac','data')">Macintosh HD - Data </div>
+        <div class="disk-partition p-mac-rec" style="width: 10%;" onclick="showTeoInfo('mac','rec')">Recovery</div>
+      </div>
+      <div id="mac-teo-box" class="info-box">Haz clic sobre el contenedor APFS de macOS para comprender su elasticidad...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Tablas de Particionado y Cargadores de Arranque</h2>
+    <p>La tabla de particiones define el mapa del disco. Los gestores se encargan de localizar el kernel en el inicio del hardware.</p>
+    <div class="grid-tech">
+      <div class="tech-item" onclick="showTechInfo('mbr')">
+        <h4>MBR (Master Boot Record)</h4>
+        <p>Estándar clásico en primer sector (512 bytes). Límite de 2 TB y un máximo estricto de 4 particiones primarias.</p>
+      </div>
+      <div class="tech-item" onclick="showTechInfo('gpt')">
+        <h4>GPT (GUID Partition Table)</h4>
+        <p>Estándar moderno ligado a UEFI. Soporta discos en Zettabytes, hasta 128 particiones directas y redundancia CRC32.</p>
+      </div>
+      <div class="tech-item" onclick="showTechInfo('grub')">
+        <h4>GRUB / Linux bootloaders</h4>
+        <p>Gestores de arranque modulares capaces de leer dinámicamente múltiples file systems e inicializar el Kernel.</p>
+      </div>
+    </div>
+    <div id="tech-teo-box" class="info-box" style="margin-top:14px;">Haz clic en una tecnología para desplegar su arquitectura detallada...</div>
+  </div>
+</div>
+
+<div id="panel-sim" class="panel">
+  <div class="sim-layout">
+    <div>
+      <div class="sim-disk-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="sim-disk-title" id="diskTitle">UNIDAD DE ALMACENAMIENTO (Capacidad: 500 GB)</div>
+          <div style="font-size:13px; color:var(--text3)">
+            Plantillas: <span class="preset-link" onclick="loadPreset('linux')">Linux Servidor</span> | 
+            <span class="preset-link" onclick="loadPreset('windows')">Windows Estándar</span>
+          </div>
+        </div>
+        
+        <div class="sim-disk-bar" id="simDiskBar"></div>
+
+        <div class="sim-stats">
+          <div class="stat-box">
+            <div class="stat-label">Espacio Asignado</div>
+            <div class="stat-val" id="statUsed">0 GB</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Espacio Libre</div>
+            <div class="stat-val" id="statFree">500 GB</div>
+          </div>
+        </div>
+
+        <div class="part-list" id="partList"></div>
+      </div>
+
+      <div class="validation-box" id="validationBox"></div>
+    </div>
+
+    <div class="sim-controls">
+      
+      <div class="ctrl-group">
+        <div class="ctrl-title">Ecosistema Destino</div>
+        <label class="ctrl-label">Nomenclatura y Puntos de Montaje</label>
+        <select class="ctrl-select" id="ctrlOSNomenclature" onchange="changeOSFromControls()">
+          <option value="Windows">Windows Clásico (Unidades C:, D:, E:)</option>
+          <option value="Linux">Linux Nativo (Puntos de montaje /)</option>
+        </select>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-title">Esquema del Disco Duro</div>
+        <label class="ctrl-label">Tabla de particionado global</label>
+        <select class="ctrl-select" id="ctrlTableType" onchange="changeTableFromControls()">
+          </select>
+      </div>
+
+      <div class="ctrl-group">
+        <label class="ctrl-label">Propósito / Punto de Montaje</label>
+        <div id="wrapperPartName">
+          </div>
+      </div>
+
+      <div class="ctrl-group">
+        <label class="ctrl-label">Tamaño a asignar (GB)</label>
+        <input type="number" step="any" class="ctrl-input" id="ctrlSize" value="64">
+      </div>
+
+      <div class="ctrl-group">
+        <label class="ctrl-label">Sistema de Archivos (File System)</label>
+        <select class="ctrl-select" id="ctrlFS">
+          </select>
+      </div>
+
+      <div class="sim-message" id="simMsg"></div>
+
+      <button class="btn-add" onclick="addPartition()">＋ Crear y Asignar Partición</button>
+      <button class="btn-check" onclick="checkPartitionSystem()">📋 Comprobar Particiones</button>
+      <button class="btn-reset" onclick="resetSim()">Formatear Unidad</button>
+    </div>
+  </div>
+</div>
+
+<div id="panel-quiz" class="panel">
+  <div class="quiz-shell">
+    <div class="quiz-header">
+      <div style="font-size:14px; font-weight:700; color:var(--text3); text-transform:uppercase;">Evaluación de Arquitectura de Almacenamiento</div>
+      <div id="quizCounter" style="font-size:14px; color:var(--accent); font-family:'Space Mono', monospace;">Pregunta 1 de 15</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="quizBar"></div>
+    </div>
+
+    <div id="quizBody">
+      </div>
+  </div>
+</div>
+
+<script>
+// ===== ESTADO DEL SIMULADOR =====
+let totalDiskSize = 500;
+let partitions = [];
+const colors = ['#00e5ff', '#7c5cfc', '#2ecc8a', '#f5a623', '#f25656', '#1ec8c8'];
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute('data-theme') === 'dark';
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('themeText').textContent = isDark ? 'Modo Oscuro' : 'Modo Claro';
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(`panel-${tabId}`).classList.add('active');
+}
+
+// ===== TEORÍA INTERACTIVA =====
+function showTeoInfo(so, part) {
+  const winBox = document.getElementById('win-teo-box');
+  const linBox = document.getElementById('lin-teo-box');
+  const macBox = document.getElementById('mac-teo-box');
+  
+  if (so === 'win') {
+    if (part === 'boot') winBox.innerHTML = "<strong>Partición EFI (~100-500MB):</strong> Formateada en FAT32. Guarda el gestor de arranque <em>Windows Boot Manager</em>. Requerida obligatoriamente en entornos UEFI.";
+    if (part === 'sys') winBox.innerHTML = "<strong>Unidad C: (NTFS):</strong> Raíz del sistema de Microsoft. Guarda el Kernel NT, archivos de programa y perfiles de usuario. Requiere un mínimo recomendado de 64 GB en sistemas modernos.";
+    if (part === 'data') winBox.innerHTML = "<strong>Unidad D: (NTFS/exFAT):</strong> Partición de almacenamiento opcional para salvaguardar datos del usuario ante fallos lógicos o formateos limpios de C:.";
+    if (part === 'rec') winBox.innerHTML = "<strong>Partición Recovery:</strong> Entorno WinRE que provee herramientas para restaurar copias del sistema o reparar el arranque dañado.";
+  }
+  if (so === 'lin') {
+    if (part === 'boot') linBox.innerHTML = "<strong>/boot o EFI (ext4/FAT32):</strong> Aloja el mapa del kernel (vmlinuz), los scripts temporales iniciales (initramfs) y el cargador de arranque GRUB.";
+    if (part === 'root') linBox.innerHTML = "<strong>/ (Raíz - ext4):</strong> La base lógica absoluta de los entornos Unix/Linux. Todos los directorios (/etc, /bin, /var) cuelgan jerárquicamente de este punto de montaje.";
+    if (part === 'home') linBox.innerHTML = "<strong>/home (ext4):</strong> Carpeta privada para los perfiles de usuarios. Permite formatear o cambiar la distribución del sistema operativo sin borrar tus carpetas de documentos personales.";
+    if (part === 'swap') linBox.innerHTML = "<strong>[SWAP] (Memoria de Intercambio):</strong> Espacio crudo sin sistema de ficheros tradicional utilizado por el kernel para volcar páginas inactivas de la memoria RAM hacia el disco físico.";
+  }
+  if (so === 'mac') {
+    if (part === 'efi') macBox.innerHTML = "<strong>EFI Boot:</strong> Inicializa el firmware de la arquitectura Apple y carga las herramientas de bajo nivel antes de acoplar el sistema operativo primario.";
+    if (part === 'sys') macBox.innerHTML = "<strong>Macintosh HD (System R-O):</strong> Volumen montado estrictamente como Solo Lectura (Read-Only) protegido por SSV (Signed System Volume). Aloja el núcleo base de macOS imposibilitando alteraciones por malware.";
+    if (part === 'data') macBox.innerHTML = "<strong>Macintosh HD - Data (R-W):</strong> Volumen con permisos de Lectura y Escritura. Contiene los datos personales, aplicaciones de terceros y perfiles lógicos de cada usuario interactuando de forma elástica en el contenedor APFS.";
+    if (part === 'rec') macBox.innerHTML = "<strong>Recovery Partición APFS:</strong> Sistema minimalista e independiente del almacenamiento principal. Permite reinstalar el sistema, utilizar la terminal de comandos o alterar directivas de arranque seguro.";
+  }
+}
+
+function showTechInfo(tech) {
+  const box = document.getElementById('tech-teo-box');
+  if (tech === 'mbr') box.innerHTML = "<strong>Master Boot Record:</strong> Ubicado de forma inamovible en los primeros 512 bytes del disco físico. Sus registros direccionan un tamaño máximo de 2 Terabytes. Si requieres más de 4 volúmenes, estás obligado a convertir una de tus particiones primarias en una 'Partición Extendida' contenedora.";
+  if (tech === 'gpt') box.innerHTML = "<strong>GUID Partition Table:</strong> Vinculado al firmware UEFI moderno. Soporta direccionamiento en Zettabytes y permite hasta 128 particiones directas sin el truco artificial de las particiones extendidas o lógicas. Almacena respaldos automáticos en el sector final del disco.";
+  if (tech === 'grub') box.innerHTML = "<strong>GRUB / Cargadores Linux:</strong> Se instalan en el bloque de inicio para mapear el Kernel. Permiten interactuar con menús visuales avanzados antes de cargar el sistema operativo en memoria RAM.";
+}
+
+// ===== LÓGICA DE INTERCONEXIÓN Y MODIFICACIONES DINÁMICAS =====
+
+function changeOSFromControls() {
+  const os = document.getElementById('ctrlOSNomenclature').value;
+  const tableSelect = document.getElementById('ctrlTableType');
+  
+  if (os === 'Windows') {
+    tableSelect.innerHTML = `
+      <option value="none" selected disabled>— Elije una tabla de particionado —</option>
+      <option value="GPT">GPT (Moderno - Ilimitado)</option>
+      <option value="MBR">MBR (Clásico - Máx 4 primarias)</option>
+    `;
+  } else {
+    tableSelect.innerHTML = `
+      <option value="none" selected disabled>— Elije una tabla de particionado —</option>
+      <option value="GRUB_GPT">GRUB (GPT / Linux)</option>
+      <option value="GRUB_MBR">GRUB (MBR / Linux)</option>
+    `;
+  }
+  
+  partitions = [];
+  syncInputsAndLabels();
+  renderSim();
+}
+
+function changeTableFromControls() {
+  const selectedScheme = document.getElementById('ctrlTableType').value;
+  const osType = document.getElementById('ctrlOSNomenclature').value;
+  
+  if (selectedScheme === "none") return;
+
+  let blockName = "";
+  let sizeAlloc = 0.1;
+  let fileSys = "FAT32";
+  
+  if (selectedScheme === "GPT") {
+    blockName = "[GPT] Tabla Global (EFI)";
+    sizeAlloc = 0.1;
+  } else if (selectedScheme === "MBR") {
+    blockName = "[MBR] Registro de Arranque";
+    sizeAlloc = 0.1;
+  } else if (selectedScheme.includes("GRUB")) {
+    blockName = "Partición EFI (Arranque)";
+    sizeAlloc = 1.0; // 1 GB automático para Linux GRUB
+  }
+
+  partitions = partitions.filter(p => !p.name.includes("Tabla Global") && !p.name.includes("Registro de Arranque") && !p.name.includes("Partición EFI"));
+
+  partitions.unshift({
+    name: blockName,
+    size: sizeAlloc,
+    fs: fileSys,
+    color: '#4338ca',
+    osType: osType,
+    diskScheme: selectedScheme
+  });
+
+  partitions.forEach(p => p.diskScheme = selectedScheme);
+
+  syncInputsAndLabels();
+  renderSim();
+}
+
+function syncInputsAndLabels() {
+  const os = document.getElementById('ctrlOSNomenclature').value;
+  const wrapper = document.getElementById('wrapperPartName');
+  const fsSelect = document.getElementById('ctrlFS');
+  const table = document.getElementById('ctrlTableType').value;
+  
+  let displayTableText = table === "none" ? "Sin definir" : table.replace('GRUB_', 'GRUB ');
+  document.getElementById('diskTitle').textContent = `UNIDAD DE ALMACENAMIENTO (Estructura: ${displayTableText} - Capacidad: ${totalDiskSize} GB)`;
+
+  if (os === 'Linux') {
+    wrapper.innerHTML = `
+      <select class="ctrl-select" id="ctrlPartName" onchange="autoSyncFSAndSizes()">
+        <option value="/">Partición Raíz (/)</option>
+        <option value="/home">Partición /home</option>
+        <option value="swap">Linux: Intercambio (swap)</option>
+      </select>
+    `;
+    fsSelect.innerHTML = `
+      <option value="ext4">ext4 (Nativo Linux)</option>
+      <option value="swap">SWAP (Específico)</option>
+    `;
+  } else {
+    wrapper.innerHTML = `
+      <select class="ctrl-select" id="ctrlPartName" onchange="autoSyncFSAndSizes()">
+        <option value="C:">Unidad C: (Sistema)</option>
+        <option value="D:">Unidad D: (Datos)</option>
+        <option value="E:">Unidad E: (Multimedia / Extra)</option>
+      </select>
+    `;
+    fsSelect.innerHTML = `
+      <option value="NTFS">NTFS (Nativo Windows)</option>
+      <option value="exFAT">exFAT (Moderno Removible)</option>
+      <option value="FAT32">FAT32 (Clásico)</option>
+    `;
+  }
+  autoSyncFSAndSizes();
+  document.getElementById('validationBox').classList.remove('visible');
+}
+
+function autoSyncFSAndSizes() {
+  const os = document.getElementById('ctrlOSNomenclature').value;
+  const pName = document.getElementById('ctrlPartName') ? document.getElementById('ctrlPartName').value : '';
+  const fsSelect = document.getElementById('ctrlFS');
+  const sizeInput = document.getElementById('ctrlSize');
+
+  if (!pName) return;
+
+  if (os === 'Linux') {
+    if (pName === 'swap') {
+      fsSelect.value = 'swap';
+      sizeInput.value = "4"; // Por defecto entre 2 GB a 4 GB
+    } else if (pName === '/home') {
+      fsSelect.value = 'ext4';
+      sizeInput.value = "100"; // Más grande que swap por defecto
+    } else {
+      fsSelect.value = 'ext4';
+      sizeInput.value = "50";
+    }
+  } else {
+    fsSelect.value = 'NTFS';
+    if (pName === 'C:') {
+      sizeInput.value = "120";
+    } else {
+      sizeInput.value = "100";
+    }
+  }
+}
+
+function getUsedSpace() {
+  return partitions.reduce((sum, p) => sum + p.size, 0);
+}
+
+function renderSim() {
+  const bar = document.getElementById('simDiskBar');
+  const partList = document.getElementById('partList');
+  bar.innerHTML = ''; partList.innerHTML = '';
+
+  let used = getUsedSpace();
+  let free = totalDiskSize - used;
+
+  used = Math.round(used * 100) / 100;
+  free = Math.round(free * 100) / 100;
+
+  document.getElementById('statUsed').textContent = used + ' GB';
+  document.getElementById('statFree').textContent = free + ' GB';
+
+  partitions.forEach((p, idx) => {
+    let pct = (p.size / totalDiskSize) * 100;
+    
+    let seg = document.createElement('div');
+    seg.className = 'sim-seg';
+    seg.style.width = pct + '%';
+    seg.style.backgroundColor = p.color + '22';
+    seg.style.borderLeft = '3px solid ' + p.color;
+    seg.innerHTML = `
+      <span style="color:${p.color}; font-family:'Space Mono', monospace; font-size:11px;">${p.name}</span>
+      <span style="font-size:11px; opacity:0.8;">${p.size} GB</span>
+    `;
+    bar.appendChild(seg);
+
+    let item = document.createElement('div');
+    item.className = 'part-item';
+    item.innerHTML = `
+      <div class="part-dot" style="background-color:${p.color}"></div>
+      <div class="part-name">Ecosistema: <strong>${p.osType}</strong> (Tabla: ${p.diskScheme.replace('GRUB_', 'GRUB ')}) → Unidad: <code style="color:var(--accent)">${p.name}</code> <span style="font-weight:normal; font-size:12px; color:var(--text3)">(${p.fs})</span></div>
+      <div class="part-meta">${p.size} GB</div>
+      <button class="part-del" onclick="removePartition(${idx})">×</button>
+    `;
+    partList.appendChild(item);
+  });
+
+  if (free > 0) {
+    let freePct = (free / totalDiskSize) * 100;
+    let freeSeg = document.createElement('div');
+    freeSeg.className = 'sim-free';
+    freeSeg.style.width = freePct + '%';
+    freeSeg.innerHTML = `<span>Espacio Vacío: ${free} GB</span>`;
+    bar.appendChild(freeSeg);
+  }
+}
+
+function addPartition() {
+  const msg = document.getElementById('simMsg');
+  msg.className = 'sim-message';
+  
+  const osType = document.getElementById('ctrlOSNomenclature').value;
+  const tableType = document.getElementById('ctrlTableType').value;
+  const name = document.getElementById('ctrlPartName').value;
+  let size = parseFloat(document.getElementById('ctrlSize').value);
+  let fs = document.getElementById('ctrlFS').value;
+
+  if (tableType === "none" || !tableType) {
+    msg.textContent = 'Por favor, elije una tabla de particionado global antes de crear subunidades.';
+    msg.classList.add('visible'); return;
+  }
+
+  if (isNaN(size) || size <= 0) {
+    msg.textContent = 'Ingresa un tamaño numérico válido.';
+    msg.classList.add('visible'); return;
+  }
+
+  let used = getUsedSpace();
+  if (used + size > totalDiskSize) {
+    msg.textContent = `Hardware al límite. Solo restan ${totalDiskSize - used} GB utilizables.`;
+    msg.classList.add('visible'); return;
+  }
+
+  if (partitions.some(p => p.name === name)) {
+    msg.textContent = `La partición o unidad [${name}] ya se encuentra mapeada en el disco.`;
+    msg.classList.add('visible'); return;
+  }
+
+  msg.classList.remove('visible');
+  let color = colors[partitions.length % colors.length];
+  
+  partitions.push({ name, size, fs, color, osType, diskScheme: tableType });
+  document.getElementById('validationBox').classList.remove('visible');
+  renderSim();
+}
+
+function removePartition(idx) {
+  if (idx === 0 && (partitions[0].name.includes("Tabla Global") || partitions[0].name.includes("Registro de Arranque") || partitions[0].name.includes("Partición EFI"))) {
+    alert("Este bloque base representa el mapa de arranque del disco duro y es obligatorio. Cambia la tabla de particionado para mutarlo.");
+    return;
+  }
+  partitions.splice(idx, 1);
+  document.getElementById('validationBox').classList.remove('visible');
+  renderSim();
+}
+
+function resetSim() {
+  partitions = [];
+  document.getElementById('validationBox').classList.remove('visible');
+  changeOSFromControls();
+}
+
+function loadPreset(preset) {
+  partitions = [];
+  if (preset === 'linux') {
+    document.getElementById('ctrlOSNomenclature').value = 'Linux';
+    document.getElementById('ctrlTableType').innerHTML = `
+      <option value="none">— Elije una tabla de particionado —</option>
+      <option value="GRUB_GPT">GRUB (GPT / Linux)</option>
+      <option value="GRUB_MBR">GRUB (MBR / Linux)</option>
+    `;
+    document.getElementById('ctrlTableType').value = 'GRUB_GPT';
+    syncInputsAndLabels();
+    partitions = [
+      { name: 'Partición EFI (Arranque)', size: 1, fs: 'FAT32', color: '#4338ca', osType: 'Linux', diskScheme: 'GRUB_GPT' },
+      { name: '/', size: 50, fs: 'ext4', color: colors[1], osType: 'Linux', diskScheme: 'GRUB_GPT' },
+      { name: '/home', size: 445, fs: 'ext4', color: colors[2], osType: 'Linux', diskScheme: 'GRUB_GPT' }, // Más grande que swap
+      { name: 'swap', size: 4, fs: 'swap', color: colors[3], osType: 'Linux', diskScheme: 'GRUB_GPT' } // Configurado en 4 GB
+    ];
+  } else {
+    document.getElementById('ctrlOSNomenclature').value = 'Windows';
+    document.getElementById('ctrlTableType').innerHTML = `
+      <option value="none">— Elije una tabla de particionado —</option>
+      <option value="GPT">GPT (Moderno - Ilimitado)</option>
+      <option value="MBR">MBR (Clásico - Máx 4 primarias)</option>
+    `;
+    document.getElementById('ctrlTableType').value = 'GPT';
+    syncInputsAndLabels();
+    partitions = [
+      { name: '[GPT] Tabla Global (EFI)', size: 0.1, fs: 'FAT32', color: '#4338ca', osType: 'Windows', diskScheme: 'GPT' },
+      { name: 'C:', size: 120, fs: 'NTFS', color: colors[0], osType: 'Windows', diskScheme: 'GPT' },
+      { name: 'D:', size: 379.9, fs: 'NTFS', color: colors[1], osType: 'Windows', diskScheme: 'GPT' }
+    ];
+  }
+  renderSim();
+}
+
+// ===== MOTOR DE EVALUACIÓN ACADÉMICA =====
+function checkPartitionSystem() {
+  const box = document.getElementById('validationBox');
+  const osType = document.getElementById('ctrlOSNomenclature').value;
+  
+  let issues = [];
+  let achievements = [];
+
+  let totalUsed = getUsedSpace();
+  let freeSpace = totalDiskSize - totalUsed;
+  freeSpace = Math.round(freeSpace * 100) / 100;
+
+  if (osType === 'Linux') {
+    let hasEFI = partitions.some(p => p.name.includes('Partición EFI'));
+    let hasRoot = partitions.some(p => p.name === '/');
+    let hasHome = partitions.some(p => p.name === '/home');
+    let swapPart = partitions.find(p => p.name === 'swap');
+    let homePart = partitions.find(p => p.name === '/home');
+
+    if (!hasEFI) {
+      issues.push(`• <strong>Falta Registro de Arranque / EFI:</strong> Inicializa la tabla global para inyectar el cargador GRUB.`);
+    } else {
+      achievements.push(`✓ Partición base EFI de Linux verificada (Asignado: 1 GB).`);
+    }
+
+    if (!hasRoot) {
+      issues.push(`• <strong>Falta Partición Raíz (/):</strong> El sistema carece de un volumen de montaje jerárquico principal.`);
+    } else {
+      achievements.push(`✓ Partición Raíz (/) asignada.`);
+    }
+
+    if (!hasHome) {
+      issues.push(`• <strong>Falta Partición /home:</strong> No se han aislado los perfiles de usuario de manera óptima.`);
+    } else {
+      achievements.push(`✓ Partición /home configurada.`);
+    }
+
+    // Comprobaciones extra personalizadas para swap y home
+    if (swapPart) {
+      if (swapPart.size < 2 || swapPart.size > 4) {
+        issues.push(`• <strong>Tamaño de SWAP fuera de rango:</strong> Se recomienda que la partición swap por defecto esté entre 2 GB y 4 GB.`);
+      } else {
+        achievements.push(`✓ Partición SWAP dentro del rango recomendado (2 GB - 4 GB).`);
+      }
+    }
+
+    if (homePart && swapPart) {
+      if (homePart.size <= swapPart.size) {
+        issues.push(`• <strong>Estructura Incorrecta:</strong> El espacio del Punto de Montaje '/home' debe ser obligatoriamente superior al de la partición 'swap'.`);
+      } else {
+        achievements.push(`✓ Propósito Correcto: El tamaño de /home (${homePart.size} GB) es mayor que swap (${swapPart.size} GB).`);
+      }
+    }
+  }
+
+  let winCustomFreeMessage = false;
+
+  if (osType === 'Windows') {
+    let hasC = partitions.some(p => p.name === 'C:');
+    let hasD = partitions.some(p => p.name === 'D:');
+    let hasE = partitions.some(p => p.name === 'E:');
+    
+    if (!hasC) {
+      issues.push(`• <strong>Falta Unidad C:</strong> Windows requiere obligatoriamente una partición denominada C: para volcar los archivos del sistema.`);
+    } else {
+      let cPart = partitions.find(p => p.name === 'C:');
+      if (cPart.size < 64) {
+        issues.push(`• <strong>Capacidad Crítica en C::</strong> Windows requiere un espacio mínimo normativo de 64 GB.`);
+      } else {
+        achievements.push(`✓ Unidad C: cumple con los requisitos mínimos modernos (> 64 GB).`);
+      }
+
+      if (freeSpace > 0 && !hasD && !hasE) {
+        winCustomFreeMessage = true;
+      }
+    }
+  }
+
+  if (freeSpace > 0) {
+    if (winCustomFreeMessage) {
+      issues.push(`• <strong>Espacio Vacío Detectado:</strong> Quedan bloques sin formatear en el volumen físico. <br><strong>Modificación necesaria:</strong> Expande el tamaño de tu última unidad creada o crea otra partición para completar el almacenamiento.`);
+    } else {
+      issues.push(`• <strong>Espacio Remanente Libre (${freeSpace} GB):</strong> Tienes almacenamiento libre desaprovechado.`);
+    }
+  }
+
+  box.className = "validation-box visible";
+  box.innerHTML = "";
+
+  let title = document.createElement('div');
+  title.className = "validation-title";
+  title.style.color = issues.length === 0 ? "var(--green)" : "var(--amber)";
+  title.textContent = issues.length === 0 ? "🎉 Estructura Verificada de Forma Correcta (100% OK)" : "🔍 Reporte de Ajustes Requeridos en el Disco";
+  box.appendChild(title);
+
+  achievements.forEach(a => {
+    box.innerHTML += `<div class="validation-item" style="color:var(--text2)"><span style="color:var(--green)">✓</span> <span>${a}</span></div>`;
+  });
+
+  issues.forEach(i => {
+    box.innerHTML += `<div class="validation-item" style="color:var(--text); margin-top:6px;"><span style="color:var(--red)">•</span> <span>${i}</span></div>`;
+  });
+}
+
+// ===== MOTOR DEL QUIZ =====
+const quizQuestions = [
+  { q: "¿De dónde se descargan los Sistemas Operativos?", a: "De taringa", b: "De Mega", c: "De youtube", d: "De la pagina oficial", correct: "d" },
+  { q: "¿Qué debo hacer antes de instalar un sistema?", a: "Partición y formato", b: "Clonar los discos", c: "Nada ya traen sistema operativo", correct: "a" },
+  { q: "¿Por qué es mejor usar un Sistema Operativo original?", a: "Para estar mas protegidos", b: "No es necesario, se consiguen en cualquier lado", correct: "a" },
+  { q: "¿Cómo puedo instalar un sistema operativo (en virtual y/o físico)?", a: "Desde una ISO", b: "Desde un Usb", c: "Desde un CD", d: "todas son correctas", correct: "d" },
+  { q: "¿Qué es mejor para hacer una instalación en un pc moderno con windows?", a: "MBR", b: "GPT", c: "grub", correct: "b" },
+  { q: "Cuando se realiza una instalación con GPT:", a: "Al instalar linux", b: "Al instalar win 7 32bits", c: "Al instalar Windows Vista, 7, 8/8.1 o 10 con bios UEFI", correct: "c" },
+  { q: "¿Cuántas particiones puedo hacer con GPT?", a: "2", b: "5", c: "hasta 128", correct: "c" },
+  { q: "¿Cómo son los pasos para instalar un sistema operativo?", a: "Nada, los discos duros/SSD/M2 ya traen sistema operativo", b: "Partición/es => Formato/s => Mbr/gpt/Grub => Partición activa => So (a elección)", correct: "b" },
+  { q: "¿Cuál de las siguientes afirmaciones es correcta?", a: "Gpt es mas viejo", b: "MBR es mejor para corregir fallas", c: "Gpt soporta discos mas grandes y es menos propenso a fallas", correct: "c" }
+];
+
+let currentQuestion = 0;
+let userAnswers = [];
+
+function renderQuestion() {
+  const container = document.getElementById('quizBody');
+  const counter = document.getElementById('quizCounter');
+  const bar = document.getElementById('quizBar');
+
+  if (currentQuestion >= quizQuestions.length) {
+    renderQuizResults();
+    return;
+  }
+
+  counter.textContent = `Pregunta ${currentQuestion + 1} de ${quizQuestions.length}`;
+  bar.style.width = ((currentQuestion + 1) / quizQuestions.length) * 100 + "%";
+
+  let qData = quizQuestions[currentQuestion];
+  
+  let optionsHTML = `
+    <button class="quiz-opt" onclick="processQuizSelection('a')">A) ${qData.a}</button>
+    <button class="quiz-opt" onclick="processQuizSelection('b')">B) ${qData.b}</button>
+    <button class="quiz-opt" onclick="processQuizSelection('c')">C) ${qData.c}</button>
+  `;
+  
+  if (qData.d) {
+    optionsHTML += `<button class="quiz-opt" onclick="processQuizSelection('d')">D) ${qData.d}</button>`;
+  }
+
+  container.innerHTML = `
+    <div class="quiz-q">
+      <span class="q-num">Q${currentQuestion + 1}</span>
+      <span>${qData.q}</span>
+    </div>
+    <div class="quiz-opts">
+      ${optionsHTML}
+    </div>
+  `;
+}
+
+function processQuizSelection(letter) {
+  userAnswers.push(letter);
+  currentQuestion++;
+  renderQuestion();
+}
+
+function renderQuizResults() {
+  const container = document.getElementById('quizBody');
+  document.getElementById('quizCounter').textContent = "Evaluación Concluida";
+  
+  let correctHits = 0;
+  quizQuestions.forEach((q, i) => {
+    if (userAnswers[i] === q.correct) correctHits++;
+  });
+
+  let pct = Math.round((correctHits / quizQuestions.length) * 100);
+  let pass = correctHits >= Math.ceil(quizQuestions.length / 2);
+
+  container.innerHTML = `
+    <div style="text-align:center; padding: 25px 0;">
+      <h2 style="font-size:32px; margin-bottom: 10px; color:${pass ? 'var(--green)' : 'var(--amber)'}">
+        ${pass ? '¡Evaluación Completada!' : 'Sigue Practicando'}
+      </h2>
+      <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: inline-block; min-width: 280px; margin-bottom: 20px;">
+        <div style="font-size: 14px; color: var(--text3); text-transform: uppercase; font-family: 'Space Mono', monospace;">Puntaje Final</div>
+        <div style="font-size: 48px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; color: #fff; margin: 5px 0;">
+          ${correctHits} <span style="font-size: 24px; color: var(--text3); font-weight: 400;">/ ${quizQuestions.length}</span>
+        </div>
+        <div style="font-size: 16px; font-weight: 600; color: ${pass ? 'var(--green)' : 'var(--red)'}">${pct}% Correcto</div>
+      </div>
+      <p style="font-size:15px; color: var(--text2); max-width: 500px; margin: 0 auto 20px;">
+        ${pass ? 'Has completado con éxito la autoevaluación sobre preparación de entornos, instalación y tablas GPT/MBR.' : 'Te recomendamos revisar las tecnologías de particionado y pasos de instalación antes de volver a intentar.'}
+      </p>
+      <button class="btn-add" style="width:240px; margin: 0 auto;" onclick="restartQuiz()">🔄 Volver a Empezar Test</button>
+    </div>
+  `;
+}
+
+function restartQuiz() {
+  currentQuestion = 0;
+  userAnswers = [];
+  renderQuestion();
+}
+
+window.onload = function() {
+  changeOSFromControls();
+  renderQuestion();
+};
+</script>
+</body>
+</html>

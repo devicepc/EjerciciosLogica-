@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ecosistema Digital · Laboratorios de Almacenamiento y Respaldo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&family=Bricolage+Grotesque:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ===== CONFIGURACIÓN ESTÉTICA GLOBAL ===== */
+  :root[data-theme="dark"] {
+    --bg: #0d0f14;
+    --bg2: #0a0c12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #252a3a;
+    --border: #2d3350;
+    --border-soft: rgba(45,51,80,0.5);
+    --accent: #00e5ff;
+    --accent-soft: rgba(0,229,255,0.12);
+    --accent2: #7c5cfc;
+    --green: #2ecc8a;
+    --amber: #f5a623;
+    --red: #f25656;
+    --text: #e8ecf4;
+    --text2: #8b93a8;
+    --text3: #555e78;
+    --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --header-gradient: linear-gradient(135deg, #0a0c12 0%, #131a2e 50%, #0a0c12 100%);
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fb;
+    --bg2: #ffffff;
+    --surface: #ffffff;
+    --surface2: #f0f3f9;
+    --surface3: #e4e9f2;
+    --border: #d4dae8;
+    --border-soft: rgba(180,190,210,0.5);
+    --accent: #0099bb;
+    --accent-soft: rgba(0,153,187,0.10);
+    --accent2: #6242e0;
+    --green: #1e9e6b;
+    --amber: #d18a0c;
+    --red: #d63838;
+    --text: #1a1f33;
+    --text2: #50587a;
+    --text3: #8893ad;
+    --shadow: 0 4px 20px rgba(50,70,110,0.10);
+    --header-gradient: linear-gradient(135deg, #1a1f33 0%, #2a3050 50%, #1a1f33 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+    min-height: 100vh; padding-bottom: 60px; transition: background 0.3s, color 0.3s;
+    font-size: 16px; line-height: 1.6;
+  }
+
+  header.brand { background: var(--header-gradient); border-bottom: 1px solid rgba(0,229,255,0.15); position: relative; }
+  .brand-strip { display: flex; justify-content: space-between; align-items: center; padding: 14px 40px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .brand-strip-left { display: flex; align-items: center; gap: 15px; font-size: 14px; color: rgba(255,255,255,0.65); }
+  .brand-link { color: var(--accent) !important; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; text-decoration: none; letter-spacing: 0.05em; }
+  .theme-toggle { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); border-radius: 24px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+  .theme-toggle:hover { background: rgba(255,255,255,0.1); }
+  
+  .header-hero { padding: 50px 40px 45px; text-align: center; max-width: 900px; margin: 0 auto; }
+  .header-chip { display: inline-flex; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; margin-bottom: 16px; font-family: 'Space Mono', monospace; }
+  header.brand h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 42px; font-weight: 800; color: #fff; margin-bottom: 12px; line-height: 1.2; }
+  header.brand h1 .h-accent { color: var(--accent); }
+  header.brand p { font-size: 17px; color: rgba(255,255,255,0.7); }
+
+  /* ===== CONTENIDOR PRINCIPAL Y REJILLA ===== */
+  .main-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+  
+  .grid-labs { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-top: 20px; }
+  
+  /* ===== LAB CARDS MODULARES ===== */
+  .lab-card { 
+    background: var(--surface); 
+    border: 1px solid var(--border); 
+    border-radius: 16px; 
+    padding: 30px; 
+    box-shadow: var(--shadow); 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .lab-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0; transition: opacity 0.3s;
+  }
+
+  .lab-card:hover { 
+    transform: translateY(-5px); 
+    border-color: var(--accent); 
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  }
+  
+  .lab-card:hover::before { opacity: 1; }
+
+  .lab-tag { 
+    font-family: 'Space Mono', monospace; 
+    font-size: 11px; 
+    font-weight: 700; 
+    color: var(--accent2); 
+    text-transform: uppercase; 
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    display: block;
+  }
+  
+  .lab-card h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; color: #fff; margin-bottom: 12px; transition: color 0.2s; }
+  .lab-card:hover h2 { color: var(--accent); }
+  :root[data-theme="light"] .lab-card h2 { color: var(--text); }
+  
+  .lab-card p { color: var(--text2); margin-bottom: 24px; font-size: 15px; line-height: 1.5; flex-grow: 1; }
+
+  /* ===== ACCESOS DIRECTOS / ENLACES ===== */
+  .btn-link { 
+    background: var(--surface2); 
+    color: var(--text); 
+    border: 1px solid var(--border); 
+    border-radius: 10px; 
+    padding: 14px 20px; 
+    font-size: 15px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    text-decoration: none; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    font-family: 'DM Sans', sans-serif;
+  }
+  
+  .btn-link .arrow { font-family: 'Space Mono', monospace; transition: transform 0.2s ease; }
+  
+  .btn-link:hover { 
+    background: var(--accent); 
+    color: #001218; 
+    border-color: var(--accent); 
+  }
+  
+  .btn-link:hover .arrow { transform: translateX(5px); }
+
+  /* ===== FOOTER INFO ===== */
+  footer { text-align: center; margin-top: 60px; color: var(--text3); font-family: 'Space Mono', monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="brand-strip">
+    <div class="brand-strip-left">
+      <a href="#" class="brand-link">CORE PLATFORM HUB</a>
+      <span class="sep">/</span>
+      <span>Portal de Entornos de Aprendizaje Físico y Lógico</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> <span id="themeText">Modo Claro</span>
+    </button>
+  </div>
+  <div class="header-hero">
+    <div class="header-chip">Panel Central de Laboratorios e Infraestructura</div>
+    <h1>Ecosistema Práctico de <span class="h-accent">Sistemas de Infraestructura Logica</span></h1>
+    <p>Accede de forma unificada a los simuladores interactivos avanzados de almacenamiento, arquitecturas estructurales en Cobian y laboratorios de clonación por bloques.</p>
+  </div>
+</header>
+
+<main class="main-container">
+  <div class="grid-labs">
+    
+ <!-- CARD 1: PARTICIONES / ESTRUCTURA -->
+    <div class="lab-card">
+      <div>
+        <span class="lab-tag">Módulo de Almacenamiento 1</span>
+        <h2>Particiones de Disco</h2>
+        <p>Refuerza las arquitecturas internas fundamentales de las unidades de almacenamiento y el despliegue analítico de sistemas de archivos.</p>
+      </div>
+      <!-- Cambia 'particiones.html' por el nombre real de tu archivo del Laboratorio 3 -->
+      <a href="particiones.html" class="btn-link">
+        <span>Iniciar Laboratorio Estructural</span>
+        <span class="arrow">-&gt;</span>
+      </a>
+    </div>
+    <!-- CARD 2: RESPALDO FÍSICO / CLONACIÓN -->
+    <div class="lab-card">
+      <div>
+        <span class="lab-tag">Módulo de Bajo Nivel</span>
+        <h2>Clonación e Imágenes de Disco</h2>
+        <p>Simula y analiza el copiado estructural sector por sector. Evalúa diferencias de usabilidad entre entornos antiguos y asistentes modernos.</p>
+      </div>
+      <!-- Cambia 'clonacion.html' por el nombre real de tu archivo del Laboratorio 1 -->
+      <a href="clonacion.HTML" class="btn-link">
+        <span>Iniciar Laboratorio de Clonado</span>
+        <span class="arrow">-&gt;</span>
+      </a>
+    </div>
+
+    <!-- CARD 3: COBIAN BACKUP / LÓGICO -->
+    <div class="lab-card">
+      <div>
+        <span class="lab-tag">Módulo de Servidores</span>
+        <h2> Respaldo de datos: Políticas y Estrategias Cobian</h2>
+        <p>Domina los tres pilares lógicos de protección de datos: Completo (Full), Incremental y Diferencial. Experimenta con líneas de tiempo semanales reales e implementa recuperaciones seguras ante desastres de malware.</p>
+      </div>
+      <!-- Cambia 'cobian.html' por el nombre real de tu archivo del Laboratorio 2 -->
+      <a href="copias de datos.html" class="btn-link">
+        <span>Iniciar Laboratorio Cobian</span>
+        <span class="arrow">-&gt;</span>
+      </a>
+    </div>
+
+    
+
+  </div>
+</main>
+
+<footer>
+  [ SISTEMA CENTRAL DE CONFIGURACIÓN DE PLATAFORMA GRÁFICA V3.0 ]
+</footer>
+
+<script>
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute('data-theme') === 'dark';
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('themeText').textContent = isDark ? 'Modo Oscuro' : 'Modo Claro';
+}
+</script>
+</body>
+</html>
