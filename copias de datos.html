@@ -172,7 +172,7 @@
 <header class="brand">
   <div class="brand-strip">
     <div class="brand-strip-left">
-      <a href="#" class="brand-link">LABORATORIO COBIAN</a>
+      <a href="#" class="brand-link">LABORATORIO de RESPALDO de DATOS </a>
       <span class="sep">/</span>
       <span>Políticas y Estrategias de Respaldo Lógico</span>
     </div>
@@ -183,20 +183,20 @@
   <div class="header-hero">
     <div class="header-chip">Ecosistema Educativo de Respaldo</div>
     <h1>Estrategias de <span class="h-accent">Backup</span> y Recuperación</h1>
-    <p>Domina los tres pilares lógicos del respaldo de archivos en Cobian. Analiza cómo optimizar el espacio en disco, los tiempos de ejecución y la complejidad de una restauración ante desastres.</p>
+    <p>Domina los tres pilares lógicos del respaldo de archivos. Analiza cómo optimizar el espacio en disco, los tiempos de ejecución y la complejidad de una restauración ante desastres.</p>
   </div>
 </header>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('teo')">1. Conceptos y Cadena Temporal</button>
-  <button class="tab" onclick="switchTab('sim')">2. Simulador Cobian Backup</button>
+  <button class="tab" onclick="switchTab('sim')">2. Simulador de Backup</button>
   <button class="tab" onclick="switchTab('quiz')">3. Autoevaluación</button>
 </div>
 
 <div id="panel-teo" class="panel active">
   <div class="card">
     <h2>Estructuras Lógicas de Respaldo</h2>
-    <p>Los programas profesionales como Cobian Backup permiten programar tareas utilizando diferentes lógicas matemáticas y de atributos de archivo para no saturar los discos de almacenamiento de la empresa.</p>
+    <p>Los programas profesionales de Backup permiten programar tareas utilizando diferentes lógicas matemáticas y de atributos de archivo para no saturar los discos de almacenamiento de la empresa.</p>
     
     <div class="grid-tech">
       <div class="tech-item" onclick="showTeoInfo('full')">
@@ -269,7 +269,7 @@
 
     <div class="sim-controls">
       <div class="ctrl-group">
-        <div class="ctrl-title">Paso 1: Programación en Cobian</div>
+        <div class="ctrl-title">Paso 1: Programación de respaldo </div>
         <label class="ctrl-label">Tipo de Respaldo a ejecutar</label>
         <select class="ctrl-select" id="ctrlType">
           <option value="FULL">Respaldo Completo (Full)</option>
@@ -284,7 +284,7 @@
       
       <hr style="border: 0; border-top:1px solid var(--border); margin: 5px 0;">
 
-      <button class="btn-check" style="background-color: var(--surface3); color: var(--accent); border:1px solid var(--border);" onclick="toggleLearnBox()">💡 Guía Rápida de Aprendizaje (Cobian)</button>
+      <button class="btn-check" style="background-color: var(--surface3); color: var(--accent); border:1px solid var(--border);" onclick="toggleLearnBox()">💡 Guía Rápida de Aprendizaje </button>
 
       <hr style="border: 0; border-top:1px solid var(--border); margin: 5px 0;">
 
@@ -292,7 +292,7 @@
       <button class="btn-reset" onclick="resetSim()">Formatear Repositorio y Reiniciar</button>
 
       <div id="learnBoxDiv" class="learn-box-div">
-        <strong style="font-size:14px; display:block; margin-bottom:8px;">🎓 LÓGICA DE ARCHIVADO EN COBIAN</strong>
+        <strong style="font-size:14px; display:block; margin-bottom:8px;">🎓 LÓGICA DE ARCHIVADO </strong>
         <strong>1. Atributo de Archivo:</strong> Windows marca cada archivo nuevo o modificado con una "bandera" de control lógica.<br><br>
         <strong>2. ¿Cómo actúa el INCREMENTAL?:</strong> Copia el archivo modificado y limpia su bandera. Así no lo vuelve a respaldar mañana. Ahorra espacio, pero genera dependencias consecutivas en cadena.<br><br>
         <strong>3. ¿Cómo actúa el DIFERENCIAL?:</strong> Copia el archivo modificado pero NO limpia su bandera. Por ello, acumula los datos día tras día con respecto al último Completo. Pesa más, pero la restauración se hace con solo 2 archivos.<br><br>
@@ -410,7 +410,7 @@ function updateSimUI() {
     item.className = 'history-item';
     let badgeClass = b.type === 'Completo' ? 'bg-full' : (b.type === 'Incremental' ? 'bg-inc' : 'bg-diff');
     
-    let correctionMarkup = b.wasCorrected ? `<span class="history-corrected">(Autocorregido por Cobian)</span>` : "";
+    let correctionMarkup = b.wasCorrected ? `<span class="history-corrected">(Autocorregido )</span>` : "";
 
     item.innerHTML = `
       <span class="badge-type ${badgeClass}">${b.type}</span>
@@ -470,7 +470,7 @@ function executeBackup() {
       lastFullIndex = 0;
       wasCorrected = true; 
       isBestSelection = true;
-      feedbackText = "<strong>Autocorregido por Cobian:</strong> Al ser el primer respaldo de la cadena, el sistema lo elevó obligatoriamente a Completo (100 GB) para crear una base de datos segura.";
+      feedbackText = "<strong>Autocorregido:</strong> Al ser el primer respaldo de la cadena, el sistema lo elevó obligatoriamente a Completo (100 GB) para crear una base de datos segura.";
     } else {
       if (currentDayIndex === 1) sizeCalculated = 5;
       if (currentDayIndex === 2) sizeCalculated = 10;
@@ -489,7 +489,7 @@ function executeBackup() {
       lastFullIndex = 0;
       wasCorrected = true;
       isBestSelection = true;
-      feedbackText = "<strong>Autocorregido por Cobian:</strong> No existía un respaldo Completo previo. Se forzó un Full base de 100 GB para no romper la integridad estructural.";
+      feedbackText = "<strong>Autocorregido:</strong> No existía un respaldo Completo previo. Se forzó un Full base de 100 GB para no romper la integridad estructural.";
     } else {
       if (currentDayIndex === 0) sizeCalculated = 0;
       if (currentDayIndex === 1) sizeCalculated = 5;
@@ -572,7 +572,7 @@ function simulateDisasterRecovery() {
   bpBox.className = "best-practice-card visible";
   bpBox.innerHTML = `
     <h3 style="margin-top:0; color:var(--accent);">🛡️ Arquitectura Ideal de Protection (Buenas Prácticas)</h3>
-    <p style="font-size:14px; color:var(--text);">Para estar máximamente protegidos optimizando recursos, los ingenieros de sistemas configuran Cobian Backup de la siguiente forma:</p>
+    <p style="font-size:14px; color:var(--text);">Para estar máximamente protegidos optimizando recursos, los ingenieros de sistemas configuran programas de respaldo de la siguiente forma:</p>
     <ul style="font-size:13.5px; padding-left:20px; color:var(--text2); display:flex; flex-direction:column; gap:6px;">
       <li><strong>Lunes: Respaldo Completo (Full).</strong> Es obligatorio e inamovible para asentar la base estructural del servidor de archivos.</li>
       <li><strong>Martes a Viernes: Respaldos Diferenciales diarios.</strong> ¿Por qué? Porque si el viernes ocurre el ransomware, solo necesitas enlazar 2 archivos (el del lunes y el del jueves/viernes). No sufres el peligro de rotura de cadena del incremental, y no derrochas los cientos de GB redundantes que te consumiría hacer un Full diario.</li>
@@ -597,7 +597,7 @@ function resetSim() {
 
 // ===== MOTOR DEL EVALUADOR (QUIZ) =====
 const quizQuestions = [
-  { q: "Si configuras Cobian para respaldar el viernes y necesitas rapidez absoluta de restauración usando solo el archivo Full base del lunes y el archivo del día actual, ¿qué estrategia debes elegir?", a: "Respaldo Incremental", b: "Respaldo Diferencial", c: "Respaldo Estático", correct: "b", reason: "El respaldo Diferencial almacena los cambios acumulados desde el último Completo. Por tanto, para restaurar solo necesitas la base (Full) y el bloque Diferencial del día deseado." },
+  { q: "Si configuras el programa de respaldo para respaldar el viernes y necesitas rapidez absoluta de restauración usando solo el archivo Full base del lunes y el archivo del día actual, ¿qué estrategia debes elegir?", a: "Respaldo Incremental", b: "Respaldo Diferencial", c: "Respaldo Estático", correct: "b", reason: "El respaldo Diferencial almacena los cambios acumulados desde el último Completo. Por tanto, para restaurar solo necesitas la base (Full) y el bloque Diferencial del día deseado." },
   { q: "¿Qué sucede en Cobian Backup si ejecutas una tarea programada como Incremental pero es la primera vez que corre la tarea en un disco limpio?", a: "Da error del sistema por falta de archivos", b: "Ignora el proceso y no guarda datos", c: "Se fuerza automáticamente un Respaldo Completo como base", correct: "c", reason: "Los respaldos incrementales y diferenciales son de carácter relativo. Si no existe una base (Full) previa sobre la cual calcular los cambios, Cobian forzará un Full inicial por seguridad." },
   { q: "¿Cuál es la principal desventaja de realizar un Respaldo Completo (Full) todas las noches en un servidor de archivos multimedia de 15 Terabytes?", a: "Es extremadamente difícil de restaurar", b: "Consume excesivo espacio físico en disco y degrada la red por horas", c: "Suele romper la consistencia del Kernel", correct: "b", reason: "Un backup completo transfiere el 100% de los datos cada vez. En volúmenes masivos de datos (como 15 TB), esto colapsa el almacenamiento destino en pocos días y satura la red de la empresa." },
   { q: "En una estrategia Incremental pura de Lunes a Viernes, si el archivo generado el día Miércoles se daña físicamente por un apagón, ¿qué datos se pueden recuperar el Viernes?", a: "Se puede recuperar todo sin problemas", b: "Solo lo del Lunes y Martes; la cadena se rompe desde el miércoles en adelante", c: "No se puede recuperar absolutamente nada, ni siquiera la base del lunes", correct: "b", reason: "La estrategia Incremental genera una dependencia en cadena secuencial. Si el eslabón del miércoles se corrompe o pierde, es imposible concatenar los incrementales posteriores (jueves y viernes)." },
